@@ -46,3 +46,4 @@ app.*.map.json
 
 # local AI tool settings
 .claude/
+website/pdf-check/
