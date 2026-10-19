@@ -1,0 +1,51 @@
+name: impacgo_chain
+description: IMPACGO Chain — Supply Chain Management UI (web + mobile, responsive).
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+# No third-party packages: the app uses only the Flutter SDK,
+# so `flutter pub get` needs nothing beyond the SDK itself.
+dependencies:
+  excel: ^4.0.6
+  flutter:
+    sdk: flutter
+  pdf: ^3.12.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  # Lato 2.0 (SIL Open Font License). Measured against Segoe UI — the font the HTML prototype
+  # renders with on Windows — it matches glyph widths within ±3% and x-height within 1%.
+  fonts:
+    - family: Lato
+      fonts:
+        - asset: assets/fonts/Lato-400.ttf
+          weight: 400
+        - asset: assets/fonts/Lato-500.ttf
+          weight: 500
+        - asset: assets/fonts/Lato-600.ttf
+          weight: 600
+        - asset: assets/fonts/Lato-700.ttf
+          weight: 700
+        - asset: assets/fonts/Lato-800.ttf
+          weight: 800
+    # Same files registered as Flutter's built-in default family, so text that names no font also uses Lato.
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Lato-400.ttf
+          weight: 400
+        - asset: assets/fonts/Lato-500.ttf
+          weight: 500
+        - asset: assets/fonts/Lato-600.ttf
+          weight: 600
+        - asset: assets/fonts/Lato-700.ttf
+          weight: 700
+        - asset: assets/fonts/Lato-800.ttf
+          weight: 800

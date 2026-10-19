@@ -1,0 +1,6 @@
+// New terminals in this project find the tools folder (flutter.bat wrapper) first, so "flutter run -d chrome" starts in release mode (fast).
+{
+  "terminal.integrated.env.windows": {
+    "PATH": "${workspaceFolder}\\tools;${env:PATH}"
+  }
+}

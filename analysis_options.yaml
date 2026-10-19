@@ -1,0 +1,7 @@
+# Uses the SDK defaults only (no external lint package needed).
+analyzer:
+  errors:
+    library_private_types_in_public_api: ignore
+  exclude:
+    - build/**
+    - web/**
