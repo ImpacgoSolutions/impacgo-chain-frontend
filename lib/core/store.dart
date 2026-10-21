@@ -96,6 +96,9 @@ class AppStore extends ChangeNotifier {
   /// customers or suppliers. The company, warehouses, bins, tax codes, units, currencies, payment terms,
   /// number series, sales team and vehicles stay, so every form can be used. Set before the store is first used.
   static bool freshStart = false;
+  /// The website starts with one set of demo data: one supplier, one customer and one item, no documents
+  /// (set in main(); the automated tests keep the larger demo set).
+  static bool singleDemo = false;
 
   final List<Warehouse> warehouses = [];
   final List<Bin> bins = [];
@@ -109,8 +112,8 @@ class AppStore extends ChangeNotifier {
         return [
           Address('Registered office', 'Billing & Shipping', c.name, c.city, c.state, c.state == 'Telangana' ? '500003' : '530012'),
           // demo customers' second addresses (not in a fresh start, where C001 is a new customer)
-          if (custId == 'C001' && !freshStart) Address('Gajuwaka warehouse', 'Shipping only', 'Plot 7, Autonagar, Gajuwaka', 'Visakhapatnam', 'Andhra Pradesh', '530026'),
-          if (custId == 'C002' && !freshStart) Address('Bengaluru store', 'Shipping only', '14 Hosur Road, Electronic City', 'Bengaluru', 'Karnataka', '560100'),
+          if (custId == 'C001' && !freshStart && !singleDemo) Address('Gajuwaka warehouse', 'Shipping only', 'Plot 7, Autonagar, Gajuwaka', 'Visakhapatnam', 'Andhra Pradesh', '530026'),
+          if (custId == 'C002' && !freshStart && !singleDemo) Address('Bengaluru store', 'Shipping only', '14 Hosur Road, Electronic City', 'Bengaluru', 'Karnataka', '560100'),
         ];
       });
 
@@ -233,9 +236,29 @@ class AppStore extends ChangeNotifier {
       _cleanStart();
       _lightDemo();
     }
-    if (freshStart) {
+    if (freshStart || singleDemo) {
       _cleanStart();
       _noDemoMasters();
+      if (!freshStart) _singleDemo();
+    }
+  }
+
+  /// One supplier, one customer and one item - every flow can be shown with them, starting from buying.
+  void _singleDemo() {
+    suppliers.add(Supplier('S001', 'Andhra Corrugators', 'Visakhapatnam', 'Andhra Pradesh', '37AABFA7719E1Z0', 30, 3, 0, 0, 0, 'N. Prasad', 'Approved')
+      ..phone = '+91 9848012345'
+      ..address = 'Plot 21, Autonagar Industrial Area'
+      ..gstType = 'Registered');
+    customers.add(Customer('C001', 'Coastal Traders', 'Visakhapatnam', 'Andhra Pradesh', '37AAKFC1234M1Z5', 'Wholesale', 30, 500000, 'K. Rao', '+91 9876543210', 'Active')
+      ..billTo = '12-4 Beach Road, Visakhapatnam'
+      ..shipTo = 'Plot 7, Autonagar, Gajuwaka, Visakhapatnam'
+      ..gstType = 'Registered');
+    final sp = salesPersons.where((s) => s.name == 'Priya Sharma').firstOrNull ?? salesPersons.firstOrNull;
+    if (sp != null) terrOf['C001'] = sp.terr;
+    syncCustomerAddresses(customers.last);
+    items.add(Item('ITM-1001', 'Corrugated Carton 5-Ply', 'Packaging', '4819', 12, 'Nos', 42, 60, 500, 100, 5, 3, 'S001', 'None', [0, 0, 0]));
+    for (final w in warehouses) {
+      stock[w.id] = {'ITM-1001': StockCell(0)};
     }
   }
 

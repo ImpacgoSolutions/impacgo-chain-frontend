@@ -11,6 +11,8 @@ void main() {
   registerTableHooks();
   // ?fresh=1 in the address: start with no demo data at all (no transactions, no demo items / customers / suppliers)
   if (Uri.base.queryParameters['fresh'] == '1') AppStore.freshStart = true;
+  // the website opens with one set of demo data (one supplier, customer and item); ?fresh=1 opens it empty
+  AppStore.singleDemo = true;
   // There is no backend: every start (restart or reload) begins from the standard data.
   // Anything an earlier version saved in this browser is removed.
   S.forgetSaved();
