@@ -2,9 +2,9 @@ part of 'store.dart';
 
 void _seedMasters(AppStore s) {
   s.warehouses.addAll(const [
-    Warehouse('W1', 'VZG-DC', 'Vizag Distribution Centre', 'Visakhapatnam', 'Andhra Pradesh', '37AAHCI4521K1Z6', 'Srinivas Rao', 'Distribution centre', '48,000 sq ft', 6, 'Active', 'Advanced (bins, pick batches, storage rules)'),
-    Warehouse('W2', 'VJA-HUB', 'Vijayawada Fulfilment Hub', 'Vijayawada', 'Andhra Pradesh', '37AAHCI4521K1Z6', 'Kiran Kumar', 'Fulfilment hub', '22,000 sq ft', 3, 'Active', 'Advanced (bins, pick batches, storage rules)'),
-    Warehouse('W3', 'HYD-DC', 'Hyderabad Distribution Centre', 'Hyderabad', 'Telangana', '36AAHCI4521K1Z8', 'Farhana Begum', 'Distribution centre', '36,000 sq ft', 5, 'Active', 'Advanced (bins, pick batches, storage rules)'),
+    Warehouse('W1', 'VZG-DC', 'Vizag Distribution Centre', 'Visakhapatnam', 'Andhra Pradesh', '37AAHCI4521K1Z6', 'Srinivas Rao', 'Distribution centre', '48,000 sq ft', 6, 'Active', 'Advanced (bins, pick batches, storage rules)', branch: 'Visakhapatnam Branch'),
+    Warehouse('W2', 'VJA-HUB', 'Vijayawada Fulfilment Hub', 'Vijayawada', 'Andhra Pradesh', '37AAHCI4521K1Z6', 'Kiran Kumar', 'Fulfilment hub', '22,000 sq ft', 3, 'Active', 'Advanced (bins, pick batches, storage rules)', branch: 'Vijayawada Branch'),
+    Warehouse('W3', 'HYD-DC', 'Hyderabad Distribution Centre', 'Hyderabad', 'Telangana', '36AAHCI4521K1Z8', 'Farhana Begum', 'Distribution centre', '36,000 sq ft', 5, 'Active', 'Advanced (bins, pick batches, storage rules)', branch: 'Hyderabad Branch'),
   ]);
   for (final w in s.warehouses) {
     s.bins.add(Bin(w.id, 'RCV-01', 'Receiving dock', 'Inbound staging', '40 pallets', 35));

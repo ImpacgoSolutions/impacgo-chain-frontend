@@ -908,6 +908,13 @@ void dlgPick(Doc pk, {bool record = false}) {
 }
 
 /// [record] opens the shipment as its own form page: changeable until it is delivered, then shown as it was filled in.
+/// The person who signed for a delivery, from the proof-of-delivery note ("Received by K. Rao on 2026-09-28" -> "K. Rao").
+String podName(String? pod) {
+  final p = (pod ?? '').trim();
+  final m = RegExp(r'^(?:Received|Signed) by (.+?)(?: on .*)?$').firstMatch(p);
+  return m == null ? p : m.group(1)!.trim();
+}
+
 void dlgTrack(Doc dn, {bool record = false}) {
   final shp = S.docsOf('SHP').where((s) => s.ref == dn.id).firstOrNull;
   final delivered = shp?.status == 'Delivered';
@@ -921,7 +928,7 @@ void dlgTrack(Doc dn, {bool record = false}) {
     if (shp != null && (shp.awb ?? '').isNotEmpty) F('awb', 'Tracking No.', type: 'readonly', def: '${shp.awb}'),
     F('status', 'Status', type: 'select', req: true, def: delivered ? 'Delivered' : shp?.status == 'Out for Delivery' ? 'Out for Delivery' : 'In Transit', options: opts(['In Transit', 'Out for Delivery', 'Delivered'])),
     F('dd', 'Delivered Date', type: 'date', def: todayStr(), when: 'status', whenIs: 'Delivered'),
-    F('rcv_by', 'Received By', def: delivered ? (shp?.pod ?? '') : '', when: 'status', whenIs: 'Delivered', hint: 'Name of the person who signed'),
+    F('rcv_by', 'Received By', def: delivered ? podName(shp?.pod) : '', when: 'status', whenIs: 'Delivered', hint: 'Name of the person who signed'),
   ], (v, _) {
     if (v['status'] == 'Delivered') {
       S.markDelivered(dn.id, 'Received by ${v['rcv_by']} on ${v['dd']}');
@@ -2631,7 +2638,8 @@ class _DocFormState extends State<DocForm> {
               for (final h in [
                 'Item', 'Description', 'HSN / SAC', 'Qty', 'UOM', if (!noPrice) ...['Rate ($_sym)', 'Tax Code'],
                 if (_opt && !noPrice) 'Disc %',
-                if (tr || adj) 'Batch / Serial No. *',
+                // the star only when a line holds a batch- or serial-tracked item
+                if (tr || adj) 'Batch / Serial No.${lines.any((l) => l.item.isNotEmpty && S.items.any((p) => p.id == l.item && p.track != 'None')) ? ' *' : ''}',
                 if (lx && _opt) ...['Warehouse', (pr || po) ? 'Required Date' : 'Delivery Date', 'Gross', 'Disc Amt'],
                 if (_opt && !noPrice) 'Taxable',
                 if (lx && _opt) 'Tax Amt',
