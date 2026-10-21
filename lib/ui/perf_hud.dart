@@ -4,10 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
-/// Two small corner notes that explain slowness instead of leaving it a guess:
-///  • on the web, a debug build (plain `flutter run`) is many times slower than a release build, so it says so;
-///  • with `?perf=1` in the address, a live readout of how long frames take (build and drawing) and the frame rate.
-/// Neither takes mouse clicks, and neither appears in a release build unless `?perf=1` is asked for.
+/// With `?perf=1` in the address: a small corner readout of how long frames take (build and drawing) and the frame rate.
+/// It takes no mouse clicks and is never shown otherwise (no debug-build notice either).
 class PerfHud extends StatefulWidget {
   final Widget child;
   const PerfHud({super.key, required this.child});
@@ -17,7 +15,6 @@ class PerfHud extends StatefulWidget {
 
 class _PerfHudState extends State<PerfHud> {
   static final bool _perf = kIsWeb && Uri.base.queryParameters['perf'] == '1';
-  static final bool _debug = kIsWeb && kDebugMode;
   final List<FrameTiming> _recent = [];
   final ValueNotifier<String> _text = ValueNotifier('measuring…');
   Timer? _timer;
@@ -64,15 +61,12 @@ class _PerfHudState extends State<PerfHud> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_perf && !_debug) return widget.child;
+    if (!_perf) return widget.child;
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Stack(children: [
         Positioned.fill(child: widget.child),
-        if (_debug)
-          Positioned(left: 0, right: 0, bottom: 8, child: Center(child: _pill('Debug build — slow. Double-click serve_release.cmd, then reload this page', const Color(0xCCB45309)))),
-        if (_perf)
-          Positioned(
+        Positioned(
             right: 8,
             bottom: 8,
             child: ValueListenableBuilder<String>(valueListenable: _text, builder: (_, t, __) => _pill(t, const Color(0xCC0F172A))),
