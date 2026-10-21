@@ -19,8 +19,17 @@ final attachments = <String, List<Attachment>>{};
 const kMaxAttachmentBytes = 10 * 1024 * 1024; // 10 MB per file
 
 const attachmentTypes = [
-  'Supporting document', 'Purchase order copy', 'Supplier invoice', 'Customer PO', 'Delivery challan', 'Proof of delivery',
-  'Quality report', 'Agreement / contract', 'GST / KYC document', 'Photo', 'Other',
+  'Supporting document',
+  'Purchase order copy',
+  'Supplier invoice',
+  'Customer PO',
+  'Delivery challan',
+  'Proof of delivery',
+  'Quality report',
+  'Agreement / contract',
+  'GST / KYC document',
+  'Photo',
+  'Other',
 ];
 
 String fileSize(int b) => b < 1024
@@ -54,13 +63,17 @@ class _AttachmentsTabState extends State<AttachmentsTab> {
   String type = 'Document';
   bool busy = false;
 
-  List<Attachment> get files => attachments.putIfAbsent(widget.recordId, () => []);
+  List<Attachment> get files =>
+      attachments.putIfAbsent(widget.recordId, () => []);
 
   Future<void> _upload() async {
     setState(() => busy = true);
     final picked = await pickFiles();
     if (!mounted) return;
-    final tooBig = picked.where((f) => f.$2.length > kMaxAttachmentBytes).map((f) => f.$1).toList();
+    final tooBig = picked
+        .where((f) => f.$2.length > kMaxAttachmentBytes)
+        .map((f) => f.$1)
+        .toList();
     final ok = picked.where((f) => f.$2.length <= kMaxAttachmentBytes).toList();
     setState(() {
       busy = false;
@@ -71,7 +84,9 @@ class _AttachmentsTabState extends State<AttachmentsTab> {
     if (tooBig.isNotEmpty) {
       toast('${tooBig.join(', ')} is larger than 10 MB and was not attached');
     } else if (ok.isNotEmpty) {
-      toast(ok.length == 1 ? '${ok.first.$1} attached' : '${ok.length} files attached');
+      toast(ok.length == 1
+          ? '${ok.first.$1} attached'
+          : '${ok.length} files attached');
     }
   }
 
@@ -80,15 +95,27 @@ class _AttachmentsTabState extends State<AttachmentsTab> {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: C.border)),
-        child: Wrap(spacing: 12, runSpacing: 10, crossAxisAlignment: WrapCrossAlignment.center, children: [
-          Btn(busy ? 'Choosing…' : 'Upload documents', icon: 'upload', onTap: busy ? null : _upload),
-          const Text('PDF, image, Word, Excel or CSV · up to 10 MB each · several files at once', style: TextStyle(fontSize: 12, color: C.faint)),
-        ]),
+        decoration: BoxDecoration(
+            color: C.bg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: C.border)),
+        child: Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Btn(busy ? 'Choosing…' : 'Upload documents',
+                  icon: 'upload', onTap: busy ? null : _upload),
+              const Text(
+                  'PDF, image, Word, Excel or CSV · up to 10 MB each · several files at once',
+                  style: TextStyle(fontSize: 12, color: C.faint)),
+            ]),
       ),
       const SizedBox(height: 14),
       if (files.isEmpty)
-        const Padding(padding: EdgeInsets.symmetric(vertical: 18), child: Empty('No documents attached yet.'))
+        const Padding(
+            padding: EdgeInsets.symmetric(vertical: 18),
+            child: Empty('No documents attached yet.'))
       else
         for (final f in files)
           ActivityRow(
@@ -98,18 +125,22 @@ class _AttachmentsTabState extends State<AttachmentsTab> {
             tone: Tone.gray,
             onTap: () => openAttachment(f.name, f.bytes),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              IconBtn('download', () => openAttachment(f.name, f.bytes), size: 30, tip: 'Open / download'),
+              IconBtn('download', () => openAttachment(f.name, f.bytes),
+                  size: 30, tip: 'Open / download'),
               const SizedBox(width: 6),
-              IconBtn('trash', () => confirmDelete(f.name, () {
-                    setState(() => files.remove(f));
-                    toast('${f.name} removed');
-                  }), size: 30, tip: 'Remove'),
+              IconBtn(
+                  'trash',
+                  () => confirmDelete(f.name, () {
+                        setState(() => files.remove(f));
+                        toast('${f.name} removed');
+                      }),
+                  size: 30,
+                  tip: 'Remove'),
             ]),
           ),
     ]);
   }
 }
-
 
 /// Paper-clip button at the top of a record: opens its attachments; the number shows how many files are attached.
 class AttachPin extends StatefulWidget {
@@ -128,21 +159,32 @@ class _AttachPinState extends State<AttachPin> {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () async {
-          await openModal('Attachments · ${widget.recordId}', AttachmentsTab(widget.recordId), size: ModalSize.wide,
-              actions: (ctx) => [Btn('Done', onTap: () => Navigator.of(ctx).pop())]);
+          await openModal('Attachments · ${widget.recordId}',
+              AttachmentsTab(widget.recordId),
+              size: ModalSize.wide,
+              actions: (ctx) =>
+                  [Btn('Done', onTap: () => Navigator.of(ctx).pop())]);
           if (mounted) setState(() {});
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(8), border: Border.all(color: C.border)),
+          decoration: BoxDecoration(
+              color: C.card,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: C.border)),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.attach_file, size: 17, color: C.soft),
             if (n > 0) ...[
               const SizedBox(width: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(color: C.blue600, borderRadius: BorderRadius.circular(10)),
-                child: Text('$n', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                decoration: BoxDecoration(
+                    color: C.blue600, borderRadius: BorderRadius.circular(10)),
+                child: Text('$n',
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
               ),
             ],
           ]),

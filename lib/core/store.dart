@@ -260,6 +260,71 @@ class AppStore extends ChangeNotifier {
     for (final w in warehouses) {
       stock[w.id] = {'ITM-1001': StockCell(0)};
     }
+    _singleDemoDocs();
+  }
+
+  /// One worked example on every screen, made with the one supplier, customer and item through the normal actions.
+  void _singleDemoDocs() {
+    final w = warehouses.first.id;
+    const it = 'ITM-1001';
+    // ---- Buy: request -> order -> goods receipt -> QC (10 rejected) -> bins -> return + debit note -> supplier invoice
+    final pr = saveDocForm('PR', 'S001', w, null, null, [(item: it, qty: 2000)])
+      ..purpose = 'Cartons for the festive season dispatches'
+      ..requester = 'Srinivas Rao'
+      ..dept = 'Stores';
+    prSubmit(pr.id);
+    prApprove(pr.id);
+    final poId = prPo(pr.id).open!;
+    if (doc(poId)!.status == 'Pending Approval') poApprove(poId);
+    final g = doc(poReceive(poId, [2000], 'AC/DC/2209').open!)!
+      ..vehicle = 'AP 31 TX 4410'
+      ..by = 'Kiran Kumar (Warehouse)';
+    grnRaiseQc([g.id]);
+    g
+      ..qcBy = 'Lakshmi P'
+      ..qcResult = 'Partially passed'
+      ..qcNote = '10 cartons crushed in transit'
+      ..qcDate = todayStr();
+    grnQc(g.id, [1990]);
+    for (final pa in docsOf('PA').where((p) => p.ref == g.id)) {
+      paConfirm(pa.id);
+    }
+    for (final r in docsOf('PRT').where((r) => r.ref == g.id)) {
+      prtDispatch(r.id);
+    }
+    supplierRaiseInvoice(poId, 'AND/INV/4100', todayStr(), {it: 2000}, {it: doc(poId)!.lines.first.rate});
+
+    // ---- Sell: lead -> opportunity -> quotation -> sales order -> pick -> pack -> dispatch -> invoice -> payment -> delivered -> return -> credit note
+    final lead = Lead('LEAD-0101', 'Coastal Traders', 'K. Rao', 'Visakhapatnam', 'Andhra Pradesh', 'Referral', 'Priya Sharma', 30000, todayStr(), 'Contacted', it);
+    leads.add(lead);
+    final oppId = qualifyLead(lead, qty: 500).open!;
+    final qt = saveDocForm('QT', 'C001', w, null, null, [(item: it, qty: 500)]);
+    oppQuoted(oppId, qt.id);
+    qtSend(qt.id, 'orders@coastaltraders.in');
+    qtAccept(qt.id);
+    final so = saveDocForm('SO', 'C001', w, null, null, [(item: it, qty: 500)], rates: [qt.lines.first.rate])..custPo = 'CT/PO/2026/045';
+    qtOrdered(qt.id, so.id);
+    if (so.status == 'Confirmed') {
+      final pc = pkConfirm(soRelease(so.id).open!).open!;
+      final dn = pack(pc, 10, '300 kg').open!;
+      final inv = dnDispatch(dn, 'Own fleet · Appa Rao', 'AP 31 TX 4521').open!;
+      invPay(inv, doc(inv)!.amount, 'NEFT', 'UTR N2715 1015');
+      dnDeliver(dn);
+      final sr = invReturn(inv, it, 5, 'Damaged in transit').open!;
+      srReceive(sr);
+      srCredit(sr);
+    }
+
+    // ---- Stock: transfer to Vijayawada, a damage write-off, a physical count
+    final tr = saveDocForm('TR', null, w, warehouses[1].id, null, [(item: it, qty: 300)])
+      ..vehicle = 'AP 16 TB 7702 (Own · 6 T)'
+      ..transferredBy = 'Kiran Kumar'
+      ..receivedBy = 'Venkat (VJA-HUB)';
+    trDispatch(tr.id);
+    trReceive(tr.id);
+    saveDocForm('ADJ', null, w, null, 'Damage', [(item: it, qty: -2)], rates: [item(it).cost]);
+    final cc = newCount(w, 'B · Bulk storage', 'Kiran Kumar', picks: [it])..source = 'Spot check';
+    ccCount(cc.id, [for (final l in cc.lines) countSys(w, l)]);
   }
 
   /// Removes the demo items, customers and suppliers (and what hangs off them), for a start from nothing.
