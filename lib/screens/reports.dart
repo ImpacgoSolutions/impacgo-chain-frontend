@@ -316,15 +316,12 @@ class _ReportTableCardState extends State<ReportTableCard> {
 
     Widget th(int colIdx, Widget child, {bool numeric = false}) {
       final sortable = _cols[colIdx].sort != null;
-      final sorted = m.sortCol == colIdx;
+      // no sort arrow in the heading (clicking a heading still sorts)
       final cell = Padding(
         padding: thPad,
         child: Align(
           alignment: numeric ? Alignment.centerRight : Alignment.centerLeft,
-          child: DefaultTextStyle(
-            style: thStyle,
-            child: sorted ? Row(mainAxisSize: MainAxisSize.min, children: [child, Text(m.asc ? ' ▲' : ' ▼')]) : child,
-          ),
+          child: DefaultTextStyle(style: thStyle, child: child),
         ),
       );
       if (!sortable) return cell;

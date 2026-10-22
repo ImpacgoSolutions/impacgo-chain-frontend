@@ -306,12 +306,12 @@ class _DataTableCardState extends State<DataTableCard> {
 
     Widget th(int? colIdx, Widget child, {bool numeric = false}) {
       final sortable = colIdx != null && widget.cols[colIdx].sort != null;
-      final sorted = colIdx != null && m.sortCol == colIdx;
+      // no sort arrow in the heading (clicking a heading still sorts)
       final cell = Padding(
         padding: thPad,
         child: Align(
           alignment: numeric ? Alignment.centerRight : Alignment.centerLeft,
-          child: DefaultTextStyle(style: thStyle, child: sorted ? Row(mainAxisSize: MainAxisSize.min, children: [child, Text(m.asc ? ' \u25B2' : ' \u25BC')]) : child),
+          child: DefaultTextStyle(style: thStyle, child: child),
         ),
       );
       if (!sortable) return cell;
