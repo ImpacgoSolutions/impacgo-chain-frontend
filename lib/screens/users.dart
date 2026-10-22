@@ -7,6 +7,7 @@ import '../ui/shell.dart' show sidebarScreens;
 import '../ui/table.dart';
 import '../ui/tokens.dart';
 import '../ui/widgets.dart';
+import 'remove.dart' show deleteIcon;
 
 /// Setup › Users & Roles (SCM Manager only): every account, who it is, its role and the screens it may open.
 /// An account's sidebar shows exactly the screens ticked for it.
@@ -28,6 +29,7 @@ Widget usersView() {
       onCreate: () => openUserForm(),
       onRow: (r) => openUserForm(r as AppUser),
       allowDelete: false,
+      rowActions: (r) => deleteIcon(() => deleteUser(r as AppUser)),
       search: (r) => '${(r as AppUser).name} ${r.email} ${r.title}',
       filters: [
         Filt('Role', roleNames.values.toList(), (r) => roleNames[(r as AppUser).role] ?? ''),
@@ -53,6 +55,30 @@ String _worksAt(AppUser u) {
 
 Set<String> _screensOf(AppUser u) => u.screens ?? roleScreens(u.role);
 
+/// Why this account cannot be deleted (null when it can): nobody deletes their own account,
+/// and at least one active SCM Manager (Admin) always stays.
+String? cannotDeleteUser(AppUser u) {
+  if (u == S.user) return 'You cannot delete your own account';
+  if (u.role == 'admin' && u.active && S.users.where((x) => x.role == 'admin' && x.active).length <= 1) return 'This is the only active SCM Manager (Admin): it cannot be deleted';
+  return null;
+}
+
+/// Deletes an account after confirming (the documents they worked on keep their name in the history).
+void deleteUser(AppUser u) {
+  final why = cannotDeleteUser(u);
+  if (why != null) {
+    toast(why);
+    return;
+  }
+  confirmDelete('the account of ${u.name} (${u.email})', () {
+    S.users.remove(u);
+    closeAll();
+    S.go('h_users');
+    S.refresh();
+    toast('${u.name}\'s account deleted · they can no longer sign in');
+  });
+}
+
 void openUserForm([AppUser? u]) => openFormPage(u == null ? 'New user' : 'Edit user · ${u.name}', UserForm(u),
     subtitle: 'Who the person is, their role and the screens they can open', maxWidth: 760, fill: false);
 
@@ -74,6 +100,7 @@ class _UserFormState extends State<UserForm> {
   late bool _active = widget.user?.active ?? true;
   late Set<String> _screens = {...?(widget.user == null ? null : _screensOf(widget.user!))};
   bool _tried = false;
+  bool _showPass = false;
 
   bool get _editing => widget.user != null;
 
@@ -163,10 +190,20 @@ class _UserFormState extends State<UserForm> {
         _label(label, req: req),
         TextField(
           controller: c,
-          obscureText: secret,
+          obscureText: secret && !_showPass,
           keyboardType: type,
           style: const TextStyle(fontSize: 13),
-          decoration: InputDecoration(hintText: hint, contentPadding: const EdgeInsets.symmetric(horizontal: 11, vertical: 13)),
+          decoration: InputDecoration(
+            hintText: hint,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 11, vertical: 13),
+            suffixIcon: secret
+                ? IconButton(
+                    tooltip: _showPass ? 'Hide password' : 'Show password',
+                    icon: Icon(_showPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: C.faint),
+                    onPressed: () => setState(() => _showPass = !_showPass),
+                  )
+                : null,
+          ),
           onChanged: (_) => _tried ? setState(() {}) : null,
         ),
       ]);
@@ -268,9 +305,12 @@ class _UserFormState extends State<UserForm> {
         _screensBox(),
         if (p != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(p, style: const TextStyle(fontSize: 12.5, color: C.red))),
         const SizedBox(height: 22),
-        Wrap(alignment: WrapAlignment.end, spacing: 10, runSpacing: 8, children: [
-          Btn.secondary('Cancel', onTap: () => Navigator.of(context).pop()),
-          Btn(_editing ? 'Save changes' : 'Create user', icon: _editing ? null : 'check', onTap: _save),
+        Wrap(alignment: WrapAlignment.spaceBetween, spacing: 10, runSpacing: 8, children: [
+          if (_editing && cannotDeleteUser(widget.user!) == null) Btn.danger('Delete user', icon: 'trash', onTap: () => deleteUser(widget.user!)) else const SizedBox.shrink(),
+          Wrap(spacing: 10, runSpacing: 8, children: [
+            Btn.secondary('Cancel', onTap: () => Navigator.of(context).pop()),
+            Btn(_editing ? 'Save changes' : 'Create user', icon: _editing ? null : 'check', onTap: _save),
+          ]),
         ]),
       ]);
     });

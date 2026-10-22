@@ -89,6 +89,36 @@ void main() {
     S.login('admin@impacgo.com', 'Admin@123');
   });
 
+  testWidgets('the Admin deletes an account (after confirming); not their own, not the last Admin', (t) async {
+    S.login('admin@impacgo.com', 'Admin@123');
+    await start(t);
+    final temp = AppUser('temp@impacgo.com', 'Temp@123', 'Temp User', 'delivery', roleTitle('delivery'));
+    S.users.add(temp);
+    // the only Admin, and yourself, cannot be deleted
+    expect(cannotDeleteUser(S.user!), isNotNull);
+    deleteUser(S.user!);
+    expect(S.users, contains(S.user));
+    // another account: confirm, and it is gone
+    deleteUser(temp);
+    await t.pump(const Duration(milliseconds: 400));
+    await t.tap(find.text('Delete permanently'));
+    await t.pump(const Duration(milliseconds: 400));
+    expect(S.users, isNot(contains(temp)));
+    expect(S.loginError('temp@impacgo.com', 'Temp@123'), isNotNull, reason: 'a deleted account cannot sign in');
+    // the edit form offers Delete user for others, not for yourself
+    openUserForm(S.users.firstWhere((u) => u.role == 'store'));
+    await t.pump(const Duration(milliseconds: 400));
+    expect(find.text('Delete user'), findsOneWidget);
+    closeAll();
+    await t.pump(const Duration(milliseconds: 300));
+    openUserForm(S.user);
+    await t.pump(const Duration(milliseconds: 400));
+    expect(find.text('Delete user'), findsNothing);
+    closeAll();
+    await t.pump(const Duration(milliseconds: 300));
+    expect(t.takeException(), isNull);
+  });
+
   test('a switched-off account cannot sign in; at least one Admin always stays', () {
     final u = S.users.firstWhere((x) => x.role == 'delivery')..active = false;
     expect(S.loginError(u.email, u.password), contains('switched off'));
