@@ -25,8 +25,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _signIn() {
-    final ok = S.login(_email.text.trim(), _pass.text);
-    if (!ok) setState(() => _error = 'Email or password is incorrect');
+    if (_email.text.trim().isEmpty || _pass.text.isEmpty) {
+      setState(() => _error = 'Enter your email and password');
+      return;
+    }
+    final err = S.loginError(_email.text.trim(), _pass.text);
+    if (err != null) setState(() => _error = err);
   }
 
   Widget _label(String t) => Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(t, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.soft)));
@@ -86,13 +90,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (_error != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_error!, style: const TextStyle(fontSize: 12.5, color: C.red))),
                   const SizedBox(height: 18),
                   SizedBox(height: 42, child: Btn('Sign in', icon: 'check', onTap: _signIn)),
+                  const SizedBox(height: 12),
+                  const Text('Forgot your password? Ask your administrator to reset it.', textAlign: TextAlign.center, style: TextStyle(fontSize: 11.5, color: C.faint)),
                 ]),
               ),
               const SizedBox(height: 16),
               CardBox(
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  const Text('Demo accounts · tap one to fill the form', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.soft)),
+                  const Text('Demo accounts · tap one to fill in the form', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.soft)),
                   const SizedBox(height: 6),
                   for (final u in demoUsers)
                     InkWell(

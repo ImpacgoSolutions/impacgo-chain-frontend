@@ -10,6 +10,7 @@ import '../screens/supplier_portal.dart' show supplierToQuote, supplierNewOrders
 import 'overlays.dart';
 import 'tokens.dart';
 import 'widgets.dart';
+import 'login.dart';
 
 class NavCategory {
   final String label, icon;
@@ -96,6 +97,8 @@ final List<NavGroup> nav = [
     NavItem('h_customers', 'Customers', 'users'),
     NavItem('suppliers', 'Suppliers', 'store'),
     NavItem('h_team', 'Sales & Delivery Team', 'truck'),
+    // accounts, roles and the screens each person may open (SCM Manager only)
+    NavItem('h_users', 'Users & Roles', 'badge'),
   ]),
   // what a supplier sees after logging in (the manager sees it too, acting as a supplier)
   NavGroup('Supplier Portal', [
@@ -135,6 +138,18 @@ List<String> crumbsFor(String id) {
   return ['SCM Workspace'];
 }
 
+/// Every screen in the sidebar (what an account can be given), by sidebar section.
+List<(String, List<NavItem>)> sidebarScreens() => [
+      for (final g in nav)
+        (
+          g.group ?? 'Home',
+          [
+            for (final it in g.items)
+              if (it.category == null) it else ...it.category!.items,
+          ],
+        ),
+    ];
+
 // ================================================================ ROOT SHELL
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -146,10 +161,19 @@ class _AppShellState extends State<AppShell> {
   final _scaffold = GlobalKey<ScaffoldState>();
 
   @override
+  void initState() {
+    super.initState();
+    // the screens an account can be given are the ones in the sidebar
+    grantableScreens = {for (final g in sidebarScreens()) ...g.$2.map((i) => i.id)};
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: S,
       builder: (ctx, _) {
+        // nobody signed in: the sign-in page
+        if (!S.signedIn) return const LoginScreen();
         final desktop = isDesktop(ctx);
         resolveView();
         // a screen this person may not open (e.g. a supplier) goes to their first allowed screen
@@ -611,61 +635,150 @@ void openNotifications() {
   );
 }
 
-void openProfile() {
-  final u = S.user ?? demoUsers.first;
-  openModal(
-    '${u.name} — ${u.title.split(' · ').first}',
-    Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      KvGrid([
-        Kv.t('Email', u.email),
-        Kv.t('Role', u.title),
-        if (u.role == 'supplier') Kv.t('Supplier', S.sup(u.party!).name) else ...[
-          Kv.t('Legal entity', S.currentCompany),
-          Kv.t('Default warehouse', S.currentWh.name),
-        ],
-        if (u.role == 'admin') Kv.t('Approval limit', fmtINR(2500000)),
-      ]),
-      const SizedBox(height: 18),
-      // demo only: try the website as each person (until the real login is switched on)
-      const Text('VIEW THE WEBSITE AS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.soft, letterSpacing: .5)),
-      const SizedBox(height: 4),
-      const Text('Each role sees only its own screens and buttons.', style: TextStyle(fontSize: 12, color: C.faint)),
-      const SizedBox(height: 8),
-      for (final x in demoUsers)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(R.sm),
-            onTap: x.email == u.email
-                ? null
-                : () {
-                    closeAll();
-                    S.login(x.email, x.password);
-                    toast('Now viewing as ${x.name} · ${x.title.split(' · ').first}');
-                  },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(R.sm),
-                color: x.email == u.email ? C.blue50 : C.card,
-                border: Border.all(color: x.email == u.email ? C.blue600 : C.border),
-              ),
-              child: Row(children: [
-                Avatar(x.name),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(x.name, style: tsB6),
-                    Text(x.title, style: const TextStyle(fontSize: 11.5, color: C.faint)),
-                  ]),
-                ),
-                if (x.email == u.email) const StatusBadge('Current', tone: Tone.blue),
-              ]),
-            ),
+/// My profile: a small card with the person's details; Edit lets them change their name, mobile, email and password.
+void openProfile() => showDialog<void>(
+      context: rootCtx,
+      barrierColor: const Color(0x73141B2D),
+      builder: (ctx) => Dialog(
+        backgroundColor: C.card,
+        surfaceTintColor: Colors.transparent,
+        insetPadding: EdgeInsets.symmetric(horizontal: isMobile(ctx) ? 12 : 40, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440), child: const _ProfileCard()),
+      ),
+    );
+
+class _ProfileCard extends StatefulWidget {
+  const _ProfileCard();
+  @override
+  State<_ProfileCard> createState() => _ProfileCardState();
+}
+
+class _ProfileCardState extends State<_ProfileCard> {
+  bool _edit = false;
+  String? _error;
+  final _name = TextEditingController(), _email = TextEditingController(), _phone = TextEditingController();
+  final _pass = TextEditingController(), _pass2 = TextEditingController();
+
+  AppUser get _u => S.user!;
+
+  @override
+  void dispose() {
+    for (final c in [_name, _email, _phone, _pass, _pass2]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _startEdit() => setState(() {
+        _name.text = _u.name;
+        _email.text = _u.email;
+        _phone.text = _u.phone;
+        _pass.clear();
+        _pass2.clear();
+        _error = null;
+        _edit = true;
+      });
+
+  void _save() {
+    final email = _email.text.trim();
+    String? err;
+    if (_name.text.trim().isEmpty) {
+      err = 'Enter your name';
+    } else if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      err = 'Enter a valid email address';
+    } else if (S.users.any((x) => x != _u && x.email.toLowerCase() == email.toLowerCase())) {
+      err = 'Another account already uses this email';
+    } else if (_pass.text.isNotEmpty && _pass.text.length < 6) {
+      err = 'The new password needs at least 6 characters';
+    } else if (_pass.text != _pass2.text) {
+      err = 'The two passwords do not match';
+    }
+    if (err != null) {
+      setState(() => _error = err);
+      return;
+    }
+    _u
+      ..name = _name.text.trim()
+      ..email = email
+      ..phone = _phone.text.trim();
+    if (_pass.text.isNotEmpty) _u.password = _pass.text;
+    setState(() => _edit = false);
+    S.refresh();
+    toast('Profile saved');
+  }
+
+  Widget _row(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(width: 110, child: Text(label, style: const TextStyle(fontSize: 12.5, color: C.faint))),
+          Expanded(child: Text(value.isEmpty ? '—' : value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+        ]),
+      );
+
+  Widget _field(String label, TextEditingController c, {bool secret = false, String? hint}) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.soft))),
+          TextField(controller: c, obscureText: secret, style: const TextStyle(fontSize: 13), decoration: InputDecoration(hintText: hint, contentPadding: const EdgeInsets.symmetric(horizontal: 11, vertical: 13))),
+        ]),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final u = _u;
+    final where = u.role == 'supplier'
+        ? (u.party != null && S.suppliers.any((s) => s.id == u.party) ? S.sup(u.party!).name : '—')
+        : (u.wh.isEmpty || !S.warehouses.any((w) => w.id == u.wh) ? 'All warehouses' : '${S.wh(u.wh).code} — ${S.wh(u.wh).city}');
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+        Row(children: [
+          Avatar(u.name, size: 52, strong: true),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(u.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text(u.title, style: const TextStyle(fontSize: 12.5, color: C.soft)),
+            ]),
           ),
-        ),
-    ]),
-    actions: (ctx) => [Btn.secondary('Close', onTap: () => Navigator.of(ctx).pop())],
-    size: ModalSize.narrow,
-  );
+          IconBtn('x', () => Navigator.of(context).pop()),
+        ]),
+        const SizedBox(height: 14),
+        const Divider(height: 1),
+        const SizedBox(height: 8),
+        if (!_edit) ...[
+          _row('Email', u.email),
+          _row('Mobile', u.phone),
+          _row('Role', roleNames[u.role] ?? u.role),
+          _row(u.role == 'supplier' ? 'Supplier' : 'Works at', where),
+          if (u.role != 'supplier') _row('Company', S.currentCompany),
+          const SizedBox(height: 14),
+          // side by side, or one under the other on a narrow phone
+          Wrap(alignment: WrapAlignment.spaceBetween, spacing: 10, runSpacing: 8, children: [
+            Btn.secondary('Sign out', icon: 'logout', onTap: () {
+              closeAll();
+              S.signOut();
+            }),
+            Btn('Edit profile', icon: 'edit', onTap: _startEdit),
+          ]),
+        ] else ...[
+          const SizedBox(height: 6),
+          _field('Full Name', _name, hint: 'Your full name'),
+          _field('Email', _email),
+          _field('Mobile', _phone, hint: '+91 98480 12345'),
+          _field('New Password', _pass, secret: true, hint: 'Leave empty to keep the current one'),
+          _field('Confirm New Password', _pass2, secret: true),
+          if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(_error!, style: const TextStyle(fontSize: 12.5, color: C.red))),
+          Text('Your role and screens are set by the administrator.', style: const TextStyle(fontSize: 11.5, color: C.faint)),
+          const SizedBox(height: 14),
+          Wrap(alignment: WrapAlignment.end, spacing: 10, runSpacing: 8, children: [
+            Btn.secondary('Cancel', onTap: () => setState(() => _edit = false)),
+            Btn('Save changes', onTap: _save),
+          ]),
+        ],
+      ]),
+    );
+  }
 }

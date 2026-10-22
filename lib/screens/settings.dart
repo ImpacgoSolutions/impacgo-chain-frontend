@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../ui/select.dart';
 import '../app_state.dart';
+import '../core/auth.dart';
 import '../core/format.dart';
 import '../core/models.dart';
 import '../core/store.dart';
@@ -38,30 +39,51 @@ Widget workspaceView() {
     }
   }
 
+  // each person sees the figures, flows and lists of the screens they can open
+  final hour = DateTime.now().hour;
+  final greet = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
+  final first = (S.user?.name ?? '').split(' ').first;
+  final sell = ['leads', 'opps', 'quotes', 'sorders', 'fulfil', 'sinvoices'].any(S.canView);
+  final buy = ['preqs', 'rfqs', 'porders', 'grns', 'qc', 'putaway', 'pinvoices'].any(S.canView);
+  final stats = [
+    if (S.canView('sorders')) Stat('Open sales orders', fmtINR(openSO.fold(0.0, (a, d) => a + d.amount)), '${openSO.length} orders', 'cart', Tone.blue, onTap: () => S.go('sorders')),
+    if (S.canView('fulfil')) Stat('Ready to dispatch', '${S.docsOf('DN').where((d) => d.status == 'Ready to Dispatch').length}', 'Today', 'truck', Tone.green, onTap: () => S.go('deliveries')),
+    if (S.canView('fulfil')) Stat('Pending deliveries', '$pendingDN', 'Pending', 'clock', Tone.purple, onTap: () => S.go('dtracking')),
+    if (S.canView('porders')) Stat('Open purchase orders', fmtINR(openPO.fold(0.0, (a, d) => a + d.amount)), '${openPO.length} POs', 'bag', Tone.amber, onTap: () => S.go('porders')),
+    if (S.canView('onhand')) Stat('Stock value', fmtINR(stockValue), 'At cost', 'box', Tone.teal, onTap: () => S.go('onhand')),
+    if (S.canView('rep_low_stock')) Stat('Below reorder level', '$below', 'Action', 'alert', Tone.red, up: false, onTap: () => S.go('rep_low_stock')),
+  ];
   return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    PageHeader('SCM Workspace', sub: 'Good afternoon, Srinivas · ${S.currentWh.name} · ${_longDate(todayStr())}', actions: [
-      Btn('New sales order', icon: 'plus', onTap: () {
-        S.go('sorders');
-        openDocForm('SO');
-      }),
+    PageHeader('SCM Workspace', sub: '$greet${first.isEmpty ? '' : ', $first'} · ${S.currentWh.name} · ${_longDate(todayStr())}', actions: [
+      if (S.canView('sorders') && S.canCreate('SO'))
+        Btn('New sales order', icon: 'plus', onTap: () {
+          S.go('sorders');
+          openDocForm('SO');
+        })
+      else if (S.canView('preqs') && S.canCreate('PR'))
+        Btn('New purchase request', icon: 'plus', onTap: () {
+          S.go('preqs');
+          openDocForm('PR');
+        }),
     ]),
-    StatRow([
-      Stat('Open sales orders', fmtINR(openSO.fold(0.0, (a, d) => a + d.amount)), '${openSO.length} orders', 'cart', Tone.blue, onTap: () => S.go('sorders')),
-      Stat('Ready to dispatch', '${S.docsOf('DN').where((d) => d.status == 'Ready to Dispatch').length}', 'Today', 'truck', Tone.green, onTap: () => S.go('deliveries')),
-      Stat('Pending deliveries', '$pendingDN', 'Pending', 'clock', Tone.purple, onTap: () => S.go('dtracking')),
-      Stat('Open purchase orders', fmtINR(openPO.fold(0.0, (a, d) => a + d.amount)), '${openPO.length} POs', 'bag', Tone.amber, onTap: () => S.go('porders')),
-      Stat('Stock value', fmtINR(stockValue), 'At cost', 'box', Tone.teal, onTap: () => S.go('onhand')),
-      Stat('Below reorder level', '$below', 'Action', 'alert', Tone.red, up: false, onTap: () => S.go('rep_low_stock')),
-    ], max: 6, compact: true),
-    const RGrid(max: 2, minTile: 380, children: [
-      FlowChips('Order to Cash', ['Lead', 'Opportunity', 'Quotation', 'Sales Order', 'Credit Check', 'Pick', 'Pack', 'Dispatch', 'Delivery Tracking', 'Invoice', 'Payment'], 3,
-          'Credit check, stock reservation, e-way bill, shipment and the invoice are created by the system — users only confirm the physical steps and record the payment.'),
-      FlowChips('Procure to Stock', ['Reorder', 'Purchase Request', 'Purchase Order', 'Goods Receipt', 'QC', 'Bin Allocation', 'Purchase Invoice'], 2,
-          'Reorder runs daily and suggests requests; bins are allocated after QC so stock is ready to pick.'),
-    ]),
+    if (stats.isNotEmpty) StatRow(stats, max: stats.length < 6 ? stats.length.clamp(2, 6) : 6, compact: true),
+    if (sell || buy)
+      RGrid(max: sell && buy ? 2 : 1, minTile: 380, children: [
+        if (sell)
+          const FlowChips('Order to Cash', ['Lead', 'Opportunity', 'Quotation', 'Sales Order', 'Credit Check', 'Pick', 'Pack', 'Dispatch', 'Delivery Tracking', 'Invoice', 'Payment'], 3,
+              'Credit check, stock reservation, e-way bill, shipment and the invoice are created by the system — users only confirm the physical steps and record the payment.'),
+        if (buy)
+          const FlowChips('Procure to Stock', ['Reorder', 'Purchase Request', 'Purchase Order', 'Goods Receipt', 'QC', 'Bin Allocation', 'Purchase Invoice'], 2,
+              'Reorder runs daily and suggests requests; bins are allocated after QC so stock is ready to pick.'),
+      ]),
     const SizedBox(height: 18),
-    const SectionTitle('Latest sales orders'),
-    docTable('wsSO', 'SO', sortedDocs(S.docsOf('SO')).take(6).toList(), bulk: false, filters: false),
+    if (S.canView('sorders')) ...[
+      const SectionTitle('Latest sales orders'),
+      docTable('wsSO', 'SO', sortedDocs(S.docsOf('SO')).take(6).toList(), bulk: false, filters: false),
+    ] else if (S.canView('preqs')) ...[
+      const SectionTitle('Latest purchase requests'),
+      docTable('wsPR', 'PR', sortedDocs(S.docsOf('PR')).take(6).toList(), bulk: false, filters: false),
+    ],
   ]);
 }
 

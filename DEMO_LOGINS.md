@@ -1,7 +1,9 @@
 # IMPACGO Chain — demo logins
 
-For testing only. The accounts are defined in `lib/core/auth.dart` (`demoUsers`).
-On the login screen you can also tap a demo account to fill the email and password.
+For testing only. The website opens on the sign-in page; tap a demo account on it to fill in the email and password.
+The accounts are defined in `lib/core/auth.dart` (`demoUsers`). The Admin can add more in **Setup › Users & Roles**
+(name, email, mobile, password, role, warehouse / supplier, and the screens the person may open — their sidebar shows exactly those).
+Without a backend, accounts added there last until the page is reloaded; the person signed in stays signed in after a reload.
 
 | Role | Email | Password | Can do |
 |---|---|---|---|
@@ -25,4 +27,5 @@ Approve / Reject buttons are shown only to the SCM Manager. What needs approval:
 
 The limits are set in Setup › Company Settings.
 
-Until the login screen is switched on, open the profile (top right) and use **View the website as** to try each role.
+**Profile:** click your name (top right) to see your details, **Edit profile** (name, email, mobile, password) and **Sign out**.
+Users & Roles and Company Settings can only ever be opened by the SCM Manager (Admin).

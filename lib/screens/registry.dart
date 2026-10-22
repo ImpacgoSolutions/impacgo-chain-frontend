@@ -12,6 +12,7 @@ import 'settings.dart';
 import 'setup_lists.dart';
 import 'report_templates.dart';
 import 'supplier_portal.dart';
+import 'users.dart';
 import 'fulfilment.dart';
 import 'qc.dart';
 
@@ -110,6 +111,8 @@ Widget _screenBody(String id) {
     case 'sportal':
     case 'sp_po':
       return const SupplierPortalView(SupplierPage.orders);
+    case 'h_users':
+      return usersView();
     case 'sp_rfq':
       return const SupplierPortalView(SupplierPage.rfqs);
     case 'sp_inv':

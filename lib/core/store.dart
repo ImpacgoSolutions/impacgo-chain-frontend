@@ -70,15 +70,47 @@ class AppStore extends ChangeNotifier {
   String currentCompany = 'IMPACGO Chain Pvt Ltd';
   bool sideCollapsed = false;
 
+  /// Every account (the demo accounts to start with; the Admin adds more in Setup › Users & Roles).
+  final List<AppUser> users = [...demoUsers];
+
+  /// The website opens on the sign-in page (switched on by main(); tests start signed in as the manager).
+  static bool requireLogin = false;
+  late bool signedIn = !requireLogin;
   AppUser? user = demoUsers.first;
 
-  bool login(String email, String pass) {
-    final u = demoUsers.where((x) => x.email.toLowerCase() == email.toLowerCase() && x.password == pass).firstOrNull;
-    if (u == null) return false;
+  static const _kSession = 'impacgo_chain_session';
+
+  /// Signs in; null when it worked, otherwise why not.
+  String? loginError(String email, String pass) {
+    final u = users.where((x) => x.email.toLowerCase() == email.trim().toLowerCase()).firstOrNull;
+    if (u == null || u.password != pass) return 'Email or password is incorrect';
+    if (!u.active) return 'This account is switched off · ask your administrator';
     user = u;
-    if (u.role == 'supplier') view = 'sp_po';
+    signedIn = true;
+    // everyone starts on their home screen (a supplier on its orders)
+    view = u.role == 'supplier' ? 'sp_po' : 'workspace';
+    persistStore.writeSaved(_kSession, u.email);
     notifyListeners();
-    return true;
+    return null;
+  }
+
+  bool login(String email, String pass) => loginError(email, pass) == null;
+
+  /// Back to the sign-in page.
+  void signOut() {
+    signedIn = false;
+    persistStore.clearSaved(_kSession);
+    notifyListeners();
+  }
+
+  /// After a reload the person who was signed in stays signed in.
+  void restoreSession() {
+    final email = persistStore.readSaved(_kSession);
+    final u = email == null ? null : users.where((x) => x.email == email && x.active).firstOrNull;
+    if (u == null) return;
+    user = u;
+    signedIn = true;
+    view = u.role == 'supplier' ? 'sp_po' : 'workspace';
   }
 
   void go(String v) {
