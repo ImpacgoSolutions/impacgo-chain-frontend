@@ -25,6 +25,8 @@ class Users {
 
 class Params {
   double soApproval = 500000, poApproval = 500000, adjApproval = 10000, ewayLimit = 50000;
+  /// A quotation priced more than this % below the price list needs the SCM Manager's approval before it is sent.
+  double qtDiscount = 10;
   double matchTolerance = 2;
   String creditCheck = 'Block on overdue or limit breach';
   String pickStrategy = 'First Expiry, First Out';
@@ -311,6 +313,7 @@ class AppStore extends ChangeNotifier {
       invPay(inv, doc(inv)!.amount, 'NEFT', 'UTR N2715 1015');
       dnDeliver(dn);
       final sr = invReturn(inv, it, 5, 'Damaged in transit').open!;
+      srApprove(sr);
       srReceive(sr);
       srCredit(sr);
     }
@@ -320,13 +323,20 @@ class AppStore extends ChangeNotifier {
       ..vehicle = 'AP 16 TB 7702 (Own · 6 T)'
       ..transferredBy = 'Kiran Kumar'
       ..receivedBy = 'Venkat (VJA-HUB)';
+    trApprove(tr.id);
     trDispatch(tr.id);
     trReceive(tr.id);
     saveDocForm('ADJ', null, w, null, 'Damage', [(item: it, qty: -2)], rates: [item(it).cost]);
     final cc = newCount(w, 'B · Bulk storage', 'Kiran Kumar', picks: [it])..source = 'Spot check';
     ccCount(cc.id, [for (final l in cc.lines) countSys(w, l)]);
-    // ---- Supplier Portal: a request for quotation waiting for the supplier's price
-    newRfq(it, 1000, w, addDays(todayStr(), 3), [suppliers.first.id]);
+    // ---- Supplier Portal: an approved request sent out for quotation, waiting for the supplier's price
+    final rq = saveDocForm('PR', suppliers.first.id, w, null, null, [(item: it, qty: 1000)])
+      ..purpose = 'Stock for the next quarter · comparing prices first'
+      ..requester = 'Srinivas Rao'
+      ..dept = 'Stores';
+    prSubmit(rq.id);
+    prApprove(rq.id);
+    newRfq(it, 1000, w, addDays(todayStr(), 3), [suppliers.first.id], prRef: rq.id);
   }
 
   /// Removes the demo items, customers and suppliers (and what hangs off them), for a start from nothing.

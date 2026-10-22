@@ -121,7 +121,7 @@ extension Persist on AppStore {
         'buyCleaned': true,
         'currentWh': currentWh.id,
         'params': {
-          'soApproval': params.soApproval, 'poApproval': params.poApproval, 'adjApproval': params.adjApproval, 'ewayLimit': params.ewayLimit, 'matchTolerance': params.matchTolerance,
+          'soApproval': params.soApproval, 'qtDiscount': params.qtDiscount, 'poApproval': params.poApproval, 'adjApproval': params.adjApproval, 'ewayLimit': params.ewayLimit, 'matchTolerance': params.matchTolerance,
           'creditCheck': params.creditCheck, 'pickStrategy': params.pickStrategy, 'autoReserve': params.autoReserve, 'autoInvoice': params.autoInvoice, 'autoPutaway': params.autoPutaway,
           'reorderRun': params.reorderRun, 'numbering': params.numbering, 'currency': params.currency, 'fy': params.fy,
         },
@@ -176,6 +176,7 @@ extension Persist on AppStore {
     final p = (j['params'] as Map).cast<String, dynamic>();
     params
       ..soApproval = _pd(p['soApproval'])
+      ..qtDiscount = p['qtDiscount'] == null ? 10 : _pd(p['qtDiscount'])
       ..poApproval = _pd(p['poApproval'])
       ..adjApproval = _pd(p['adjApproval'])
       ..ewayLimit = _pd(p['ewayLimit'])

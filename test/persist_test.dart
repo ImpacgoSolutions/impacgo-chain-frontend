@@ -15,7 +15,9 @@ void main() {
     S.doc(dn)!.eway = '123456789012';
     final inv = S.dnDispatch(dn, 'Blue Dart', S.vehicles.first).open!;
     S.invPay(inv, 5000, 'NEFT', 'UTR1');
-    S.srReceive(S.invReturn(inv, qt.lines.first.item, 2, 'Damaged').open!);
+    final sr = S.invReturn(inv, qt.lines.first.item, 2, 'Damaged').open!;
+    S.srApprove(sr);
+    S.srReceive(sr);
     final w = S.warehouses.first.id;
     final pr = S.saveDocForm('PR', 'S001', w, null, null, [(item: 'ITM-1001', qty: 100)]);
     S.prSubmit(pr.id);
@@ -25,8 +27,9 @@ void main() {
     final g = S.poReceive(po.id, [100], 'DC').open!;
     S.grnRaiseQc([g]);
     S.grnQc(g, [90]);
-    S.docs.firstWhere((d) => d.type == 'TR' && d.status == 'Requested');
-    S.trDispatch(S.docs.firstWhere((d) => d.type == 'TR').id);
+    final tr = S.docs.firstWhere((d) => d.type == 'TR' && d.status == 'Pending Approval');
+    S.trApprove(tr.id);
+    S.trDispatch(tr.id);
     S.customers.add(S.customers.first);
     S.payTerms.add(S.payTerms.first);
 

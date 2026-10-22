@@ -160,7 +160,7 @@ List<Stat>? _cards(String id) {
     case 'sreturns':
       return [
         _s('Total returns', '${_n('SR')}', 'All', 'refund', Tone.blue),
-        _s('Requested', '${_n('SR', ['Requested'])}', 'Pick up', 'clock', Tone.amber, up: false),
+        _s('Waiting', '${_n('SR', ['Pending Approval', 'Requested', 'Approved'])}', 'Approve / receive', 'clock', Tone.amber, up: false),
         _s('Received back', '${_n('SR', ['Received', 'Credited'])}', 'In stock', 'check', Tone.green),
         _s('Return value', fmtINR(_amt('SR')), 'All', 'wallet', Tone.purple),
       ];
@@ -185,7 +185,7 @@ List<Stat>? _cards(String id) {
     case 'transfers':
       return [
         _s('Total transfers', '${_n('TR')}', 'All', 'swap', Tone.blue),
-        _s('Requested', '${_n('TR', ['Requested'])}', 'To dispatch', 'clock', Tone.amber, up: false),
+        _s('Waiting', '${_n('TR', ['Pending Approval', 'Requested', 'Approved'])}', 'Approve / dispatch', 'clock', Tone.amber, up: false),
         _s('In transit', '${_n('TR', ['In Transit'])}', 'On road', 'truck', Tone.purple),
         _s('Received', '${_n('TR', ['Received'])}', 'Done', 'check', Tone.green),
       ];

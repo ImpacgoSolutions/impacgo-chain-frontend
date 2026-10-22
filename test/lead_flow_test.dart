@@ -50,6 +50,7 @@ void main() {
     S.invPay(inv, S.doc(inv)!.amount, 'NEFT', 'UTR-DEMO');
     expect(S.doc(inv)!.status, 'Paid');
     final sr = S.invReturn(inv, 'ITM-1001', 5, 'Damaged').open!;
+    S.srApprove(sr); // the SCM Manager accepts the return first
     S.srReceive(sr);
     expect(S.stk(so.wh, 'ITM-1001').onhand, stock0 - 95);
     log.add('${inv} Paid · return ${sr} received (stock ${S.stk(so.wh, 'ITM-1001').onhand})');

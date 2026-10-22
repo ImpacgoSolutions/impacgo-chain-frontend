@@ -58,12 +58,50 @@ extension ScmActions on AppStore {
     return Res('$id rejected${reason != null ? ' · Reason: $reason' : ''}', id);
   }
 
+  /// The biggest discount on a quotation, in % below the customer's price list (0 when none).
+  double qtDiscountPct(Doc d) {
+    var most = 0.0;
+    for (final l in d.lines) {
+      if (d.party == null || l.item.isEmpty || !items.any((p) => p.id == l.item)) continue;
+      final list = salesPrice(d.party!, l.item, l.qty).rate;
+      if (list > 0 && l.rate < list) most = math.max(most, (list - l.rate) / list * 100);
+    }
+    return most;
+  }
+
+  /// The prices the SCM Manager approved (a changed price needs approval again).
+  String _qtPrices(Doc d) => d.lines.map((l) => '${l.item}:${l.rate.toStringAsFixed(2)}').join('|');
+
+  /// A discount above the limit needs approval: the quotation waits as Pending Approval and is sent once approved.
+  bool qtNeedsApproval(Doc d) => qtDiscountPct(d) > params.qtDiscount && d.extra['disc_ok'] != _qtPrices(d);
+
   Res qtSend(String id, [String? email]) {
     final d = doc(id)!;
     final to = email == null || email.trim().isEmpty ? emailOfCust(d.party!) : email.trim();
+    if (qtNeedsApproval(d)) {
+      d.extra = {...d.extra, 'send_to': to};
+      setStatus(d, 'Pending Approval', Users.sales, '${qtDiscountPct(d).toStringAsFixed(1)}% below the price list · above the ${params.qtDiscount.toStringAsFixed(0)}% limit');
+      return Res('Discount of ${qtDiscountPct(d).toStringAsFixed(1)}% is above the ${params.qtDiscount.toStringAsFixed(0)}% limit · sent to the SCM Manager for approval', id);
+    }
     sendEmail(to, 'Quotation $id from IMPACGO Chain (PDF attached)', id);
     setStatus(d, 'Sent', Users.sales, 'PDF emailed to $to');
     return Res('Quotation PDF emailed to $to', id);
+  }
+
+  /// The SCM Manager approves the discount: the quotation is sent to the customer straight away.
+  Res qtApprove(String id) {
+    final d = doc(id)!;
+    d.extra = {...d.extra, 'disc_ok': _qtPrices(d)};
+    logDoc(d, 'Discount of ${qtDiscountPct(d).toStringAsFixed(1)}% approved', Users.mgr);
+    return qtSend(id, d.extra['send_to']);
+  }
+
+  /// The discount is not approved: the quotation goes back to Draft with the reason, to be re-priced.
+  Res qtRejectDiscount(String id, String reason) {
+    final d = doc(id)!;
+    d.reason = reason;
+    setStatus(d, 'Draft', Users.mgr, 'discount not approved · $reason');
+    return Res('$id back to Draft · discount not approved: $reason', id);
   }
 
   /// A sales order was created (and possibly changed) on the form opened from this accepted quotation.
@@ -342,9 +380,15 @@ extension ScmActions on AppStore {
     final l = d.lines.firstWhere((x) => x.item == itemId);
     final q = math.min(qty, l.qty);
     // the return remembers the batch / serial numbers that were sold, so they can go back into stock
-    final sr = mk(Doc(id: '', type: 'SR', date: todayStr(), wh: d.wh, status: 'Requested', party: d.party, ref: d.id, lines: [Line(itemId, q, l.rate, batch: l.batch)])..reason = reason);
+    final sr = mk(Doc(id: '', type: 'SR', date: todayStr(), wh: d.wh, status: 'Pending Approval', party: d.party, ref: d.id, by: Users.sales, lines: [Line(itemId, q, l.rate, batch: l.batch)])..reason = reason);
     link(d, sr);
-    return Res('Sales return ${sr.id} created', sr.id);
+    return Res('Sales return ${sr.id} sent to the SCM Manager for approval', sr.id);
+  }
+
+  /// The SCM Manager accepts the customer's return: the warehouse can now take the goods back.
+  Res srApprove(String id) {
+    setStatus(doc(id)!, 'Approved', Users.mgr, 'return accepted · goods can be received');
+    return Res('$id approved · the warehouse can receive the goods', id);
   }
 
   /// Returned goods come back: the batch quantity goes up again / the serial numbers are Available again.
@@ -365,19 +409,38 @@ extension ScmActions on AppStore {
     }
   }
 
-  Res srReceive(String id) {
+  /// The returned goods are inspected on arrival: [good] is the quantity per line in sellable condition (all of it by default).
+  /// Good goods go back into stock; damaged goods do not, and they are not credited.
+  Res srReceive(String id, [List<int>? good]) {
     final d = doc(id)!;
-    for (final l in d.lines) {
-      postStock(d.wh, l.item, l.qty, 'Sales return', d.id, Users.wh);
-      returnTracked(d.wh, l);
+    if (d.status == 'Pending Approval') return Res('$id is waiting for approval: the goods cannot be received yet');
+    var damaged = 0;
+    for (var i = 0; i < d.lines.length; i++) {
+      final l = d.lines[i];
+      final g = (good != null && i < good.length ? good[i] : l.qty).clamp(0, l.qty);
+      l.acc = g;
+      damaged += l.qty - g;
+      if (g > 0) {
+        postStock(d.wh, l.item, g, 'Sales return', d.id, Users.wh);
+        returnTracked(d.wh, Line(l.item, g, l.rate, batch: l.batch));
+      }
+      if (g < l.qty) logDoc(d, 'Inspection: ${item(l.item).name} · ${l.qty - g} damaged, not taken into stock', Users.wh, 'alert');
     }
-    setStatus(d, 'Received', Users.wh, 'goods back in stock after inspection');
-    return Res('Returned goods received · stock updated', id);
+    d.extra = {...d.extra, 'inspected': '1'};
+    setStatus(d, 'Received', Users.wh, damaged == 0 ? 'inspected · all goods back in stock' : 'inspected · $damaged damaged, not taken into stock');
+    return Res(damaged == 0 ? 'Returned goods received · stock updated' : 'Returned goods received · $damaged damaged, kept out of stock', id);
   }
 
   Res srCredit(String id) {
     final d = doc(id)!;
-    final cn = mk(Doc(id: '', type: 'CN', date: todayStr(), wh: d.wh, status: 'Issued', party: d.party, ref: d.id, lines: d.lines.map((l) => l.copy()).toList()));
+    // after inspection only the goods accepted back are credited
+    final inspected = d.extra['inspected'] == '1';
+    final lines = [
+      for (final l in d.lines)
+        if (!inspected || l.acc > 0) (l.copy()..qty = inspected ? l.acc : l.qty),
+    ];
+    if (lines.isEmpty) return Res('$id: no goods were accepted back, so there is nothing to credit');
+    final cn = mk(Doc(id: '', type: 'CN', date: todayStr(), wh: d.wh, status: 'Issued', party: d.party, ref: d.id, lines: lines));
     setStatus(d, 'Credited', Users.fin, cn.id);
     link(d, cn);
     final inv = d.ref == null ? null : doc(d.ref!);
@@ -450,20 +513,28 @@ extension ScmActions on AppStore {
     return Res('$id rejected by SCM Manager · Reason: $reason', id);
   }
 
+  /// The SCM Manager approved this purchase request (a request made by a direct RFQ, without approval, does not count).
+  bool prWasApproved(Doc pr) =>
+      pr.log.any((e) => e.what.startsWith('Status → Approved')) ||
+      (pr.source != 'Manual — for RFQ' && const ['Approved', 'Ordered'].contains(pr.status) && !pr.log.any((e) => e.what.startsWith('Status → Pending Approval')));
+
   Doc createPO(String supId, String w, List<Line> lines, String? ref) {
     final po = mk(Doc(id: '', type: 'PO', date: todayStr(), wh: w, status: 'Draft', party: supId, ref: ref, by: Users.buyer,
         lines: lines.map((l) => Line(l.item, l.qty, l.rate)..desc = l.desc).toList())
       ..delivery = addDays(todayStr(), sup(supId).lead));
-    if (ref != null && ref.startsWith('PR-')) {
-      // Created from an approved Purchase Request: sent directly to supplier
-      setStatus(po, 'Sent to Supplier', Users.buyer, 'from approved request $ref · sent to supplier');
+    // the request it comes from (directly, or through a request for quotation) was approved by the SCM Manager
+    final src = ref == null ? null : doc(ref);
+    final prRef = ref != null && ref.startsWith('PR-') ? ref : (src != null && src.type == 'RFQ' && (src.ref ?? '').startsWith('PR-') ? src.ref : null);
+    final approvedPr = prRef != null && doc(prRef) != null && prWasApproved(doc(prRef)!);
+    if (approvedPr) {
+      setStatus(po, 'Sent to Supplier', Users.buyer, 'from approved request $prRef · sent to supplier');
       sendEmail(emailOfSup(supId), 'Purchase order ${po.id}', po.id);
-    } else if (po.amount > params.poApproval) {
-      po.note = 'PO value ${fmtINR(po.amount)} is above the ${fmtINR(params.poApproval)} approval limit';
-      setStatus(po, 'Pending Approval', Users.sys);
     } else {
-      setStatus(po, 'Sent to Supplier', Users.sys, 'within limit · emailed to ${sup(supId).contact}');
-      sendEmail(emailOfSup(supId), 'Purchase order ${po.id}', po.id);
+      // no approved purchase request behind it: the SCM Manager approves every such order, whatever its value
+      po.note = po.amount > params.poApproval
+          ? 'PO value ${fmtINR(po.amount)} is above the ${fmtINR(params.poApproval)} approval limit'
+          : 'No approved purchase request behind this order';
+      setStatus(po, 'Pending Approval', Users.sys, po.note);
     }
     return po;
   }
@@ -527,9 +598,11 @@ extension ScmActions on AppStore {
     if (forSup != null) po.extra = {...po.extra, 'pr_sup': forSup};
     logDoc(po, 'Created from $prId', Users.buyer);
     link(pr, po);
-    // Since PR was approved by SCM Manager, the PO is sent to supplier
-    setStatus(po, 'Sent to Supplier', Users.buyer, 'from approved request $prId · sent to supplier');
-    sendEmail(emailOfSup(po.party!), 'Purchase order ${po.id}', po.id);
+    // Since PR was approved by SCM Manager, the PO is sent to supplier (once)
+    if (po.status != 'Sent to Supplier') {
+      setStatus(po, 'Sent to Supplier', Users.buyer, 'from approved request $prId · sent to supplier');
+      sendEmail(emailOfSup(po.party!), 'Purchase order ${po.id}', po.id);
+    }
     _prAfterOrder(pr, poId);
     final left = prSuppliersToOrder(pr).length;
     return Res('Purchase order $poId created from $prId · Sent to Supplier${left > 0 ? ' · $left more supplier(s) to order on this request' : ''}', poId);
@@ -903,8 +976,15 @@ extension ScmActions on AppStore {
   }
 
   // ============================ INVENTORY & LOGISTICS ============================
+  /// The SCM Manager approves a transfer before any stock leaves the warehouse.
+  Res trApprove(String id) {
+    setStatus(doc(id)!, 'Approved', Users.mgr, 'ready to dispatch');
+    return Res('$id approved · ready to dispatch', id);
+  }
+
   Res trDispatch(String id) {
     final d = doc(id)!;
+    if (d.status == 'Pending Approval') return Res('$id is waiting for approval: it cannot be dispatched yet');
     for (final l in d.lines) {
       postStock(d.wh, l.item, -l.qty, 'Transfer out', d.id, Users.wh);
       issueTracked(d.wh, l, serialStatus: 'In Transit');
@@ -1149,7 +1229,8 @@ extension ScmActions on AppStore {
     return Res('${d.id} updated', id);
   }
 
-  Doc saveDocForm(String t, String? party, String w, String? to, String? reason, List<({String item, int qty})> rows, {List<double>? rates, List<String>? batchNos}) {
+  /// [ref]: a purchase order made from this (approved) purchase request.
+  Doc saveDocForm(String t, String? party, String w, String? to, String? reason, List<({String item, int qty})> rows, {List<double>? rates, List<String>? batchNos, String? ref}) {
     if (party != null && party.isEmpty) party = null; // purchase request without a supplier
     var n = 0;
     final lines = rows.map((r) {
@@ -1182,9 +1263,9 @@ extension ScmActions on AppStore {
           ..source = 'Manual — Srinivas Rao'
           ..need = addDays(todayStr(), 7));
       case 'PO':
-        return createPO(party!, w, lines, null);
+        return createPO(party!, w, lines, ref);
       case 'TR':
-        return mk(Doc(id: '', type: 'TR', date: todayStr(), wh: w, to: to, status: 'Requested', by: Users.mgr, lines: lines));
+        return mk(Doc(id: '', type: 'TR', date: todayStr(), wh: w, to: to, status: 'Pending Approval', by: Users.wh, lines: lines));
       default: // ADJ
         final d = mk(Doc(id: '', type: 'ADJ', date: todayStr(), wh: w, status: 'Draft', by: Users.mgr, lines: lines)..reason = reason);
         if (calc(d).sub.abs() > params.adjApproval) {

@@ -374,6 +374,7 @@ class _ParamsViewState extends State<ParamsView> {
     final p = S.params;
     n = {
       'soApproval': TextEditingController(text: p.soApproval.toStringAsFixed(0)),
+      'qtDiscount': TextEditingController(text: p.qtDiscount.toStringAsFixed(0)),
       'poApproval': TextEditingController(text: p.poApproval.toStringAsFixed(0)),
       'matchTolerance': TextEditingController(text: p.matchTolerance.toStringAsFixed(0)),
       'adjApproval': TextEditingController(text: p.adjApproval.toStringAsFixed(0)),
@@ -423,6 +424,7 @@ class _ParamsViewState extends State<ParamsView> {
     final p = S.params;
     double v(String k, double d) => double.tryParse(n[k]!.text.trim()) ?? d;
     p.soApproval = v('soApproval', p.soApproval);
+    p.qtDiscount = v('qtDiscount', p.qtDiscount);
     p.poApproval = v('poApproval', p.poApproval);
     p.matchTolerance = v('matchTolerance', p.matchTolerance);
     p.adjApproval = v('adjApproval', p.adjApproval);
@@ -460,6 +462,7 @@ class _ParamsViewState extends State<ParamsView> {
         ),
         _sec('Sales', 'Accounts receivable & sales parameters', [
           _num('soApproval', 'Sales order approval above (₹)'),
+          _num('qtDiscount', 'Quotation discount approval above (% below price list)'),
           _sel('creditCheck', 'Credit check', ['Block on overdue or limit breach', 'Warn only', 'Off']),
           _sel('autoReserve', 'Reserve stock on confirmation', ['Yes', 'No']),
           _sel('autoInvoice', 'Create invoice', ['Yes — on dispatch', 'No — manual']),

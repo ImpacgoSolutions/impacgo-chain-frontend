@@ -77,14 +77,14 @@ void _seedMasters(AppStore s) {
   s.vehicles.addAll(['AP 31 TX 4521 (Own · 9 T)', 'AP 16 TB 7702 (Own · 6 T)', 'TS 09 UC 3318 (Own · 9 T)', 'Carrier assigned vehicle']);
   DocType t(String l, String p, String v, String party, List<String> st, String pre, int seq) => DocType(l, p, v, party, st, pre, seq);
   s.dt.addAll({
-    'QT': t('Quotation', 'Quotations', 'quotes', 'C', ['Draft', 'Sent', 'Accepted', 'Converted'], 'QT-2026-', 141),
+    'QT': t('Quotation', 'Quotations', 'quotes', 'C', ['Draft', 'Pending Approval', 'Sent', 'Accepted', 'Converted'], 'QT-2026-', 141),
     'SO': t('Sales order', 'Sales Orders', 'sorders', 'C', ['Pending Approval', 'Confirmed', 'Picking', 'Packed', 'Invoiced', 'Delivered', 'Closed'], 'SO-2026-', 319),
     'PK': t('Pick list', 'Picking', 'picking', 'C', ['To Pick', 'Picked'], 'PK-2026-', 412),
     'PCK': t('Packing slip', 'Packing', 'packing', 'C', ['Packing', 'Packed'], 'PCK-2026-', 209),
     'DN': t('Delivery note', 'Deliveries', 'deliveries', 'C', ['Ready to Dispatch', 'Dispatched', 'Delivered'], 'DN-2026-', 288),
     'INV': t('Sales invoice', 'Sales Invoices', 'sinvoices', 'C', ['Unpaid', 'Partially Paid', 'Paid'], 'INV/26-27/', 214),
     'CP': t('Customer payment', 'Customer Payments', 'cpayments', 'C', ['Allocated'], 'RCPT-2026-', 99),
-    'SR': t('Sales return', 'Sales Returns', 'sreturns', 'C', ['Requested', 'Received', 'Credited'], 'SR-2026-', 31),
+    'SR': t('Sales return', 'Sales Returns', 'sreturns', 'C', ['Pending Approval', 'Approved', 'Received', 'Credited'], 'SR-2026-', 31),
     'CN': t('Credit note', 'Credit Notes', 'sreturns', 'C', ['Issued'], 'CN-2026-', 19),
     'PR': t('Purchase request', 'Purchase Requests', 'preqs', 'S', ['Draft', 'Pending Approval', 'Approved', 'RFQ Sent', 'Ordered'], 'PR-2026-', 233),
     'RFQ': t('Request for quotation', 'RFQs', 'rfqs', 'S', ['Awaiting Quotes', 'Quotes Received', 'Awarded'], 'RFQ-2026-', 45),
@@ -95,7 +95,7 @@ void _seedMasters(AppStore s) {
     'SP': t('Supplier payment', 'Supplier Payments', 'spayments', 'S', ['Paid'], 'PAY-2026-', 77),
     'PRT': t('Purchase return', 'Purchase Returns', 'preturns', 'S', ['Submitted', 'Approved', 'Returned'], 'PRT-2026-', 12),
     'DBN': t('Debit note', 'Debit Notes', 'preturns', 'S', ['Issued'], 'DBN-2026-', 8),
-    'TR': t('Stock transfer', 'Stock Transfers', 'transfers', 'W', ['Requested', 'In Transit', 'Received'], 'TR-2026-', 65),
+    'TR': t('Stock transfer', 'Stock Transfers', 'transfers', 'W', ['Pending Approval', 'Approved', 'In Transit', 'Received'], 'TR-2026-', 65),
     'ADJ': t('Stock adjustment', 'Adjustments', 'adjust', 'W', ['Pending Approval', 'Posted'], 'ADJ-2026-', 49),
     'CC': t('Cycle count', 'Cycle Counting', 'counting', 'W', ['Counting', 'Completed'], 'CC-2026-', 31),
     'SHP': t('Shipment', 'Shipments', 'shipments', 'C', ['Booked', 'Picked Up', 'In Transit', 'Out for Delivery', 'Delivered'], 'SHP-2026-', 271),

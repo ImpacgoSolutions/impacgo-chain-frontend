@@ -551,9 +551,18 @@ class DocRecordForm extends StatelessWidget {
 List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
   final id = d.id, s = d.status;
   final a = <Widget>[];
-  void pri(String l, String i, VoidCallback f) => a.add(Btn(l, icon: i, onTap: f));
-  void sec(String l, String i, VoidCallback f) => a.add(Btn.secondary(l, icon: i, onTap: f));
-  void dan(String l, String i, VoidCallback f) => a.add(Btn.danger(l, icon: i, onTap: f));
+  // a button is shown only to the people responsible for that step (approvals and rejections: the SCM Manager)
+  void pri(String l, String i, VoidCallback f) {
+    if (S.canAct(d.type, l)) a.add(Btn(l, icon: i, onTap: f));
+  }
+
+  void sec(String l, String i, VoidCallback f) {
+    if (S.canAct(d.type, l)) a.add(Btn.secondary(l, icon: i, onTap: f));
+  }
+
+  void dan(String l, String i, VoidCallback f) {
+    if (S.canAct(d.type, l)) a.add(Btn.danger(l, icon: i, onTap: f));
+  }
   void run(Res Function() f) => after(f());
   // closing a quotation as lost or rejecting an order always records why
   void withReason(String title, String btn, List<String> reasons) => mform('$title · $id', [
@@ -593,6 +602,16 @@ List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
               after(S.qtSend(id, v['email'] as String));
               return false;
             }, btn: 'Confirm & send', icon: 'upload'));
+      }
+      if (s == 'Pending Approval') {
+        // the discount is above the limit: the SCM Manager approves (it is then sent) or sends it back to be re-priced
+        dan('Reject', 'x', () => mform('Discount not approved · $id', [
+              F('why', 'Reason', type: 'select', req: true, custom: true, full: true, options: opts(['Discount too high', 'Below cost price', 'Customer not eligible'])),
+            ], (v, _) {
+              after(S.qtRejectDiscount(id, v['why'] as String));
+              return false;
+            }, btn: 'Send back to re-price', icon: 'x', status: s, statusNote: 'Goes back to Draft with the reason; the price can be changed and sent again.'));
+        pri('Approve & send', 'check', () => run(() => S.qtApprove(id)));
       }
       if (s == 'Sent') {
         dan('Customer rejected', 'x', () => withReason('Quotation rejected', 'Mark rejected', ['Price too high', 'Bought from a competitor', 'No budget', 'Requirement cancelled', 'No response', 'Other']));
@@ -642,7 +661,28 @@ List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
       sec('Download receipt', 'download', () => downloadReceipt(d));
       break;
     case 'SR':
-      if (s == 'Requested') pri('Receive returned goods', 'inbox', () => run(() => S.srReceive(id)));
+      // the SCM Manager accepts or refuses the return first ('Requested': raised before approvals were added)
+      if (s == 'Pending Approval' || s == 'Requested') {
+        dan('Reject', 'x', () => withReason('Reject return', 'Reject return', ['Outside the return period', 'Damage caused by the customer', 'Item not sold by us', 'Already credited', 'Other']));
+        pri('Approve return', 'check', () => run(() => S.srApprove(id)));
+      }
+      // the goods are inspected on arrival: only sellable goods go back into stock (and are credited)
+      if (s == 'Approved') {
+        pri('Receive returned goods', 'inbox', () => mdialog('Receive returned goods · $id', [
+              for (var i = 0; i < d.lines.length; i++)
+                F('g$i', '${d.lines[i].desc ?? S.item(d.lines[i].item).name} · returned ${d.lines[i].qty} · good condition', type: 'number', req: true, full: true, def: '${d.lines[i].qty}', hint: 'Quantity fit to sell again'),
+            ], (v, _) {
+              final good = [for (var i = 0; i < d.lines.length; i++) (v['g$i'] as num).toInt()];
+              for (var i = 0; i < good.length; i++) {
+                if (good[i] < 0 || good[i] > d.lines[i].qty) {
+                  toast('Good quantity must be between 0 and ${d.lines[i].qty}');
+                  return false;
+                }
+              }
+              after(S.srReceive(id, good));
+              return false;
+            }, btn: 'Confirm received', icon: 'inbox', note: 'Damaged goods are not taken into stock and are not credited.'));
+      }
       if (s == 'Received') pri('Issue credit note', 'file', () => run(() => S.srCredit(id)));
       break;
     case 'PR':
@@ -706,7 +746,12 @@ List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
       if (s == 'Approved' || s == 'Requested') pri('Dispatch items', 'truck', () => run(() => S.prtDispatch(id)));
       break;
     case 'TR':
-      if (s == 'Requested') pri('Dispatch transfer', 'truck', () => run(() => S.trDispatch(id)));
+      // the SCM Manager approves before stock leaves the warehouse ('Requested': raised before approvals were added)
+      if (s == 'Pending Approval' || s == 'Requested') {
+        dan('Reject', 'x', () => withReason('Reject transfer', 'Reject transfer', ['Stock needed here', 'Wrong destination', 'Quantity too high', 'Other']));
+        pri('Approve transfer', 'check', () => run(() => S.trApprove(id)));
+      }
+      if (s == 'Approved') pri('Dispatch transfer', 'truck', () => run(() => S.trDispatch(id)));
       // a small card: confirm the quantity that really arrived for each item (a shortage is recorded)
       if (s == 'In Transit') {
         pri('Receive at destination', 'inbox', () => mdialog('Receive transfer · $id', [
@@ -1158,7 +1203,7 @@ void dlgSalesReturn(Doc d) {
     }
     after(S.invReturn(d.id, v['item'] as String, (v['qty'] as num).toInt(), v['why'] as String));
     return false;
-  }, status: 'Draft', statusNote: 'Set automatically on save.', btn: 'Create return', icon: 'refund');
+  }, status: 'Draft', statusNote: 'On save it goes to the SCM Manager for approval; then the goods are received and inspected.', btn: 'Create return', icon: 'refund');
 }
 
 void dlgBinAllocation(Doc pa, {bool record = false}) {
@@ -1522,7 +1567,7 @@ const editableStatus = <String, List<String>>{
   'PO': ['Draft', 'Pending Approval'],
   'QT': ['Draft'], // once it is sent to the customer it can no longer be changed
   'SO': ['Pending Approval', 'On Hold', 'Confirmed'],
-  'TR': ['Requested'],
+  'TR': ['Requested', 'Pending Approval'],
   'ADJ': ['Draft', 'Pending Approval'],
 };
 
@@ -2362,7 +2407,7 @@ class _DocFormState extends State<DocForm> {
         'SO': 'On save: price lookup → credit check → approval check → stock reservation.',
         'PR': 'The request is saved as a draft. Open it and press Submit to send it for approval.',
         'PO': 'Price from purchase trade agreement or standard cost. POs above ₹5,00,000 need approval.',
-        'TR': 'Dispatch reduces source stock; receipt adds it at destination.',
+        'TR': 'The SCM Manager approves it first. Dispatch reduces source stock; receipt adds it at destination.',
         'ADJ': 'Adjustments above ₹10,000 in value need approval; smaller ones post straight away.',
       }[widget.t] ??
       '';
@@ -2561,7 +2606,8 @@ class _DocFormState extends State<DocForm> {
       after(submit ? S.prSubmit(widget.editId!) : (widget.t == 'PR' ? Res(res.msg) : res));
       return;
     }
-    final d = S.saveDocForm(widget.t, pt == 'W' ? null : party, wh, widget.t == 'TR' ? to : null, widget.t == 'ADJ' ? reason : null, rows, rates: rates, batchNos: batchNos);
+    final d = S.saveDocForm(widget.t, pt == 'W' ? null : party, wh, widget.t == 'TR' ? to : null, widget.t == 'ADJ' ? reason : null, rows,
+        rates: rates, batchNos: batchNos, ref: widget.t == 'PO' && (widget.fromId ?? '').startsWith('PR-') ? widget.fromId : null);
     keepAddresses(d);
     keepDescriptions(d);
     if (widget.fromOppId != null && widget.t == 'QT') {
@@ -2624,7 +2670,7 @@ class _DocFormState extends State<DocForm> {
                     'QT': 'Stays Draft until it is sent to the customer.',
                     'PR': 'Saved as Draft. Nothing is sent until you press Submit on the request.',
                     'PO': 'On save it is sent to the supplier, or goes for approval above the limit.',
-                    'TR': 'On save it becomes Requested and waits for dispatch.',
+                    'TR': 'On save it goes to the SCM Manager for approval, then waits for dispatch.',
                     'ADJ': 'On save it is posted, or goes for approval above the limit.',
                   }[widget.t] ??
                   'Set automatically on save.',

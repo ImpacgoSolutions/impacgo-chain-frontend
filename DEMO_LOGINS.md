@@ -11,6 +11,18 @@ On the login screen you can also tap a demo account to fill the email and passwo
 | Delivery Staff | delivery@impacgo.com | Delivery@123 | Vehicles & drivers · dispatch · delivery tracking · sales returns pickup · pending deliveries report |
 | Supplier (Andhra Corrugators) | supplier@andhracorrugators.com | Supplier@123 | Supplier Portal only: RFQs & Quotations (send / update a quotation, or decline) · Purchase Orders (accept with a delivery date, or reject with a reason) · Invoices (send the invoice, follow it until paid) |
 
-Approve / Reject buttons (purchase requests, purchase orders, sales orders, stock adjustments, credit holds) are shown only to the SCM Manager.
+Approve / Reject buttons are shown only to the SCM Manager. What needs approval:
+
+- Purchase requests: always
+- Purchase orders: always, unless made from an approved purchase request (also above the PO limit)
+- Quotations: when priced more than the discount limit (10 % by default) below the price list
+- Sales orders: above the SO limit, or a credit problem
+- Sales returns: always (then the goods are inspected; only good goods go back into stock and are credited)
+- Purchase returns: always
+- Stock transfers: always, before the stock leaves
+- Stock adjustments and count differences: above the adjustment limit
+- Supplier invoices: when they do not match the order and goods receipt
+
+The limits are set in Setup › Company Settings.
 
 Until the login screen is switched on, open the profile (top right) and use **View the website as** to try each role.

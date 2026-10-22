@@ -336,6 +336,8 @@ class _NextSteps extends StatelessWidget {
         break;
     }
 
+    // a button is shown only to the people responsible for that step (approvals and rejections: the SCM Manager)
+    steps.retainWhere((w) => w is! Btn || S.canAct(d.type, w.label));
     if (steps.isEmpty && docs.isEmpty && info == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 22),

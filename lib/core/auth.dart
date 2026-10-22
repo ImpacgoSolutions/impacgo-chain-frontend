@@ -82,12 +82,14 @@ extension Access on AppStore {
   bool canAct(String docType, String label) {
     if (isManager) return true;
     final l = label.toLowerCase();
-    if (l.startsWith('print')) return true;
+    if (l.startsWith('print') || l.startsWith('download') || l.startsWith('view')) return true;
     // approvals, rejections, credit holds and money steps are the manager's
     if (l.startsWith('approve') || l == 'reject' || l.startsWith('release credit') || l.contains('credit note') || l.contains('invoice') || l.startsWith('pay') || l.startsWith('record payment')) {
       return false;
     }
-    if (docType == 'PO' && l.startsWith('receive')) return role == 'store'; // goods arrive at the store
+    if (docType == 'PO' && (l.startsWith('receive') || l.startsWith('goods received'))) return role == 'store'; // goods arrive at the store
+    // whoever may raise a document may submit it for approval
+    if (l.startsWith('submit')) return canCreate(docType);
     if (docType == 'GRN' && l.startsWith('return')) return role == 'store' || role == 'exec';
     return _act[docType]?.contains(role) ?? false;
   }
