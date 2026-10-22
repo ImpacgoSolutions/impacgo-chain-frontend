@@ -2015,8 +2015,7 @@ class _DocFormState extends State<DocForm> {
             taxCode: S.taxNameFor(l.item.isEmpty ? 18 : p.gst),
             wh: e.wh,
             batch: l.batch,
-            desc: l.desc ?? (l.item.isEmpty ? '' : p.name),
-            hsn: l.item.isEmpty ? '' : p.hsn,
+            desc: l.item.isEmpty ? (l.desc ?? '') : (l.desc == null || l.desc == p.name ? '' : l.desc!),
           );
         }));
       // a document in a foreign currency shows its rates in that currency again (saved in ₹)
@@ -2051,8 +2050,6 @@ class _DocFormState extends State<DocForm> {
               uom: p.uom,
               taxCode: S.taxNameFor(p.gst),
               wh: wh,
-              desc: p.name,
-              hsn: p.hsn,
             );
           }));
       }
@@ -2110,8 +2107,6 @@ class _DocFormState extends State<DocForm> {
           lines[i].item = v;
           if (v.isEmpty) return; // description-only line
           final itemObj = S.item(v);
-          lines[i].descCtl.text = itemObj.name;
-          lines[i].hsnCtl.text = itemObj.hsn;
           lines[i].uom = itemObj.uom;
           lines[i].rateCtl.text = _rateText((widget.t.startsWith('P') || const ['GRN', 'ADJ', 'TR'].contains(widget.t) ? itemObj.cost : itemObj.price) / _fx);
           lines[i].taxCode = S.taxNameFor(itemObj.gst);
@@ -2136,8 +2131,19 @@ class _DocFormState extends State<DocForm> {
               ],
               onChanged: (v) => setState(() => lines[i].sup = v))),
       // wraps onto a second line so a long description is never cut off
-      ('Description', 120, 1.2, false, (i) => TextField(controller: lines[i].descCtl, minLines: 1, maxLines: 2, style: small, decoration: const InputDecoration(hintText: 'What is needed', contentPadding: box))),
-      ('HSN / SAC', 64, .8, false, (i) => TextField(controller: lines[i].hsnCtl, style: small, decoration: const InputDecoration(hintText: 'Code', contentPadding: box))),
+      // nothing is typed in for the person: with an item chosen, its own name / HSN shows faintly and is used if the box is left empty
+      ('Description', 120, 1.2, false, (i) => TextField(
+            controller: lines[i].descCtl,
+            minLines: 1,
+            maxLines: 2,
+            style: small,
+            decoration: InputDecoration(hintText: lines[i].item.isEmpty ? 'What is needed' : S.item(lines[i].item).name, hintMaxLines: 2, contentPadding: box),
+          )),
+      ('HSN / SAC', 64, .8, false, (i) => TextField(
+            controller: lines[i].hsnCtl,
+            style: small,
+            decoration: InputDecoration(hintText: lines[i].item.isEmpty ? 'Code' : S.item(lines[i].item).hsn, contentPadding: box),
+          )),
       ('Qty', 52, .7, false, (i) => num(lines[i].qtyCtl)),
       ('UOM', 72, .8, false, (i) => ProtoSelect(value: lines[i].uom, options: S.uoms.map((u) => SelOpt(u.code, u.code)).toList(), onChanged: (v) => setState(() => lines[i].uom = v))),
       if (!noPrice) ('Rate ($_sym)', 68, .9, false, (i) => num(lines[i].rateCtl)),
@@ -2257,7 +2263,7 @@ class _DocFormState extends State<DocForm> {
       ..clear()
       ..addAll(q.lines.map((l) {
         final p = S.item(l.item);
-        return _DocFormLine(item: l.item, qty: l.qty.toDouble(), rate: l.rate, uom: p.uom, taxCode: S.taxNameFor(p.gst), wh: wh, delivDate: delivDateCtl.text, desc: l.desc ?? p.name, hsn: p.hsn);
+        return _DocFormLine(item: l.item, qty: l.qty.toDouble(), rate: l.rate, uom: p.uom, taxCode: S.taxNameFor(p.gst), wh: wh, delivDate: delivDateCtl.text, desc: l.desc == null || l.desc == p.name ? '' : l.desc!);
       }));
     if (lines.isEmpty) _add();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2457,7 +2463,7 @@ class _DocFormState extends State<DocForm> {
       rows.add((item: l.item, qty: q));
       batchNos.add(widget.t == 'TR' || widget.t == 'ADJ' ? l.batchCtl.text.trim() : '');
       rates.add(l.rate * _fx); // saved in ₹
-      descs.add(desc.isEmpty ? S.item(l.item).name : desc);
+      descs.add(desc);
     }
     if (rows.isEmpty) {
       toast('Add at least one line with quantity > 0');
@@ -2503,7 +2509,7 @@ class _DocFormState extends State<DocForm> {
     final pt = S.dt[widget.t]!.party;
     void keepDescriptions(Doc d) {
       for (var i = 0; i < d.lines.length && i < descs.length; i++) {
-        d.lines[i].desc = descs[i];
+        d.lines[i].desc = descs[i].isEmpty ? null : descs[i];
       }
       if (widget.t == 'SO') d.custPo = custPoNoCtl.text.trim();
       d.extra = {
