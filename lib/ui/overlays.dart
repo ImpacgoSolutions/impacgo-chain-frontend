@@ -127,7 +127,7 @@ Future<void> openFormPage(String title, Widget body, {List<Widget> Function(Buil
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 1320, minHeight: math.max(0, box.maxHeight - 44)),
+                        constraints: BoxConstraints(maxWidth: 1180, minHeight: math.max(0, box.maxHeight - 44)),
                         child: Container(
                           padding: EdgeInsets.all(mobile ? 16 : 26),
                           decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.border)),
@@ -146,7 +146,7 @@ Future<void> openFormPage(String title, Widget body, {List<Widget> Function(Buil
                 child: Align(
                   alignment: Alignment.center,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1320),
+                    constraints: const BoxConstraints(maxWidth: 1180),
                     child: Wrap(alignment: WrapAlignment.end, spacing: 10, runSpacing: 8, children: barActions),
                   ),
                 ),
@@ -219,7 +219,7 @@ Future<void> openPanel({required Widget Function(BuildContext ctx) header, requi
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 1320, minHeight: math.max(0, box.maxHeight - 44)),
+                        constraints: BoxConstraints(maxWidth: 1180, minHeight: math.max(0, box.maxHeight - 44)),
                         child: Container(
                           padding: EdgeInsets.all(mobile ? 16 : 26),
                           decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.border)),
@@ -238,7 +238,7 @@ Future<void> openPanel({required Widget Function(BuildContext ctx) header, requi
                 child: Align(
                   alignment: Alignment.center,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1320),
+                    constraints: const BoxConstraints(maxWidth: 1180),
                     child: Wrap(alignment: WrapAlignment.end, spacing: 10, runSpacing: 8, children: acts),
                   ),
                 ),

@@ -121034,7 +121034,7 @@ s.c.scv(0,"")
 r.to.push(s)},
 aqh(a,b,c,d,e,f){var s,r,q,p=this,o=new A.aHx(p),n=new A.aHv(p,o),m=B.e.ar(p.to,new A.aHz()),l=new A.aHU(p),k=A.a([new A.l5(["Item",140,2.2,!1,new A.aHA(p,e,d,new A.aHW(p,e))])],t.y7)
 if(e)k.push(new A.l5(["Supplier",130,2.6,!1,new A.aHB(p)]))
-k.push(new A.l5(["Description",120,2,!1,new A.aHK(p)]))
+k.push(new A.l5(["Description",120,1.2,!1,new A.aHK(p)]))
 k.push(new A.l5(["HSN / SAC",64,0.8,!1,new A.aHL(p)]))
 k.push(new A.l5(["Qty",52,0.7,!1,new A.aHM(p,l)]))
 k.push(new A.l5(["UOM",72,0.8,!1,new A.aHN(p)]))
@@ -130577,7 +130577,7 @@ $2(a,b){return new A.iF($.SQ(),new A.bfF(this.a,b,this.b,this.c),null,null,t.j3)
 $S:250}
 A.bfF.prototype={
 $3(a,b,c){var s=this,r=null,q=s.a,p=Math.max(0,s.b.d-44),o=s.c?16:26,n=A.bu(12)
-return A.qV(new A.dD(B.pK,r,r,new A.eA(new A.aw(0,1320,p,1/0),A.ba(r,new A.B9(s.d,r),B.P,r,r,new A.bd(B.J,r,A.ec(B.aN,1),n,r,r,B.a2),r,r,r,new A.a3(o,o,o,o),r),r),r),r,r,new A.a3(q,22,q,22+b),B.bR)},
+return A.qV(new A.dD(B.pK,r,r,new A.eA(new A.aw(0,1180,p,1/0),A.ba(r,new A.B9(s.d,r),B.P,r,r,new A.bd(B.J,r,A.ec(B.aN,1),n,r,r,B.a2),r,r,r,new A.a3(o,o,o,o),r),r),r),r,r,new A.a3(q,22,q,22+b),B.bR)},
 $S:248}
 A.b2u.prototype={
 $1(a){return A.a([new A.aC("Cancel",null,new A.b2s(a),B.ai,!1,null),A.hE("Delete permanently","trash",new A.b2t(a,this.a),!1)],t.p)},
@@ -130608,7 +130608,7 @@ return new A.iF($.SQ(),new A.bgm(s.a,b,s.b,s.c,s.d),null,null,t.j3)},
 $S:250}
 A.bgm.prototype={
 $3(a,b,c){var s=this,r=null,q=s.a,p=Math.max(0,s.b.d-44),o=s.c?16:26,n=A.bu(12),m=A.ec(B.aN,1)
-return A.qV(new A.dD(B.pK,r,r,new A.eA(new A.aw(0,1320,p,1/0),A.ba(r,new A.B9(s.d.$1(s.e),r),B.P,r,r,new A.bd(B.J,r,m,n,r,r,B.a2),r,r,r,new A.a3(o,o,o,o),r),r),r),r,r,new A.a3(q,22,q,22+b),B.bR)},
+return A.qV(new A.dD(B.pK,r,r,new A.eA(new A.aw(0,1180,p,1/0),A.ba(r,new A.B9(s.d.$1(s.e),r),B.P,r,r,new A.bd(B.J,r,m,n,r,r,B.a2),r,r,r,new A.a3(o,o,o,o),r),r),r),r,r,new A.a3(q,22,q,22+b),B.bR)},
 $S:248}
 A.qc.prototype={
 S(a){var s=null,r=A.bu(10),q=A.ec(B.aN,1)
@@ -140668,7 +140668,7 @@ B.U8=new A.aw(0,170,0,1/0)
 B.U9=new A.aw(0,400,0,1/0)
 B.Ua=new A.aw(0,1/0,0,210)
 B.Ub=new A.aw(0,260,0,1/0)
-B.wt=new A.aw(0,1320,0,1/0)
+B.wt=new A.aw(0,1180,0,1/0)
 B.Uc=new A.aw(0,1/0,32,1/0)
 B.pZ=new A.aw(1/0,1/0,1/0,1/0)
 B.Ue=new A.f7(1/0,1/0,1/0,1/0)

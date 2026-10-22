@@ -2077,7 +2077,7 @@ class _DocFormState extends State<DocForm> {
               ],
               onChanged: (v) => setState(() => lines[i].sup = v))),
       // wraps onto a second line so a long description is never cut off
-      ('Description', 120, 2, false, (i) => TextField(controller: lines[i].descCtl, minLines: 1, maxLines: 2, style: small, decoration: const InputDecoration(hintText: 'What is needed', contentPadding: box))),
+      ('Description', 120, 1.2, false, (i) => TextField(controller: lines[i].descCtl, minLines: 1, maxLines: 2, style: small, decoration: const InputDecoration(hintText: 'What is needed', contentPadding: box))),
       ('HSN / SAC', 64, .8, false, (i) => TextField(controller: lines[i].hsnCtl, style: small, decoration: const InputDecoration(hintText: 'Code', contentPadding: box))),
       ('Qty', 52, .7, false, (i) => num(lines[i].qtyCtl)),
       ('UOM', 72, .8, false, (i) => ProtoSelect(value: lines[i].uom, options: S.uoms.map((u) => SelOpt(u.code, u.code)).toList(), onChanged: (v) => setState(() => lines[i].uom = v))),
