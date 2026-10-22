@@ -18,7 +18,7 @@ class Users {
   static const mgr = 'Srinivas Rao (SCM Manager)';
   static const sales = 'Priya Sharma (Sales Exec)';
   static const buyer = 'Harish Varma (Buyer)';
-  static const wh = 'Kiran Kumar (Warehouse Lead)';
+  static const wh = 'Kiran Kumar (Warehouse Executive)';
   static const fin = 'Meena Iyer (Accounts)';
   static const sys = 'System';
 }

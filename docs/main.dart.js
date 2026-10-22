@@ -29210,9 +29210,9 @@ this.c=a},
 D_:function D_(a,b){this.a=a
 this.b=b},
 byl(){var s=t.OD
-s=A.w(new A.i(B.jS,new A.bqr(),s),s.i("m.E"))
+s=A.w(new A.i(B.jQ,new A.bqr(),s),s.i("m.E"))
 return s},
-bIC(a){var s=A.bg(new A.i(B.jS,new A.bng(a),t.OD))
+bIC(a){var s=A.bg(new A.i(B.jQ,new A.bng(a),t.OD))
 return s==null?"":B.e.gF(s.e.split(" \xb7 "))},
 cI(a){var s=a.e.d
 return s},
@@ -30734,7 +30734,7 @@ q=s.a
 return new A.aD("Pick list "+q+" created \xb7 bins and batches by earliest expiry",q)},
 awK(a,b){var s,r,q,p,o,n,m,l="Picked \xb7 packing slip ",k=a.aI(b)
 k.toString
-a.nT(k,"Picked","Kiran Kumar (Warehouse Lead)")
+a.nT(k,"Picked","Kiran Kumar (Warehouse Executive)")
 s=k.d
 r=k.f
 q=k.w
@@ -30751,7 +30751,7 @@ return new A.aD(l+k+" created automatically",k)},
 awo(a,b,c,d){var s,r,q,p,o,n,m,l,k,j,i=null,h="2026-09-28",g=a.aI(b)
 g.S=c
 g.am=d
-a.bW(g,"Packed","Kiran Kumar (Warehouse Lead)",""+c+" cartons")
+a.bW(g,"Packed","Kiran Kumar (Warehouse Executive)",""+c+" cartons")
 s=g.d
 r=g.f
 q=g.w
@@ -30792,7 +30792,7 @@ s=n.a
 l.Q.push(new A.dI("2026-09-28 "+A.de(),"System",s+" added to load","check"))
 s=n.a
 return new A.aD("Packed \xb7 "+s+" created and added to "+l.a,s)},
-bDg(a3,a4,a5,a6,a7){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e=null,d="Kiran Kumar (Warehouse Lead)",c="Dispatched",b="2026-09-28",a="System",a0=a3.aI(a4),a1=a0.w,a2=a1==null?e:a3.aI(a1)
+bDg(a3,a4,a5,a6,a7){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e=null,d="Kiran Kumar (Warehouse Executive)",c="Dispatched",b="2026-09-28",a="System",a0=a3.aI(a4),a1=a0.w,a2=a1==null?e:a3.aI(a1)
 for(a1=a0.y,s=a1.length,r=a2==null,q=!r,p=0;p<a1.length;a1.length===s||(0,A.n)(a1),++p){o=a1[p]
 n=o.a
 a3.wh(a0.d,n,-o.b,"Sales issue",a0.a,d)
@@ -30911,7 +30911,7 @@ if(q!=null)q.w=q.w+c.b}else if(r==="Serial")for(s=A.axa(a,c.r),s=A.f2(s,0,A.iQ(c
 m=A.bg(new A.i(p,new A.ax6(n==null?r.a(n):n,c),o))
 if(m!=null){m.d="Available"
 m.c=b}}},
-bDx(a,b){var s,r,q,p,o="Kiran Kumar (Warehouse Lead)",n=a.aI(b)
+bDx(a,b){var s,r,q,p,o="Kiran Kumar (Warehouse Executive)",n=a.aI(b)
 for(s=n.y,r=s.length,q=0;q<s.length;s.length===r||(0,A.n)(s),++q){p=s[q]
 a.wh(n.d,p.a,p.b,"Sales return",n.a,o)
 A.bRW(a,n.d,p)}a.bW(n,"Received",o,"goods back in stock after inspection")
@@ -31079,12 +31079,12 @@ q=A.eS(k,"2026-09-28","",s,j.f,j.a,"QC Pending",k,"GRN",q)
 q.dy=d
 l=a.eP(q)
 q=B.e.cK(j.y,new A.awM())?"Received":"Partially Received"
-a.bW(j,q,"Kiran Kumar (Warehouse Lead)",l.a)
+a.bW(j,q,"Kiran Kumar (Warehouse Executive)",l.a)
 a.fJ(j,l)
 for(q=a.al("PI"),o=B.e.gP(q),q=new A.aN(o,new A.awN(j),A.j(q).i("aN<1>"));q.q();)A.awr(a,o.gG(0).a)
 j=l.a
 return new A.aD(j+" created \xb7 goods held in RCV-01 until QC",j)},
-bDh(a,b,a0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f=null,e="Kiran Kumar (Warehouse Lead)",d="2026-09-28",c=a.aI(b)
+bDh(a,b,a0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f=null,e="Kiran Kumar (Warehouse Executive)",d="2026-09-28",c=a.aI(b)
 c.toString
 s=A.a([],t.Rv)
 for(r=0;q=c.y,p=q.length,r<p;++r){o=q[r]
@@ -31130,7 +31130,7 @@ if(o.f.length!==0){n=o.a
 m=a.av(0,n).b
 k.l(0,m,k.aa(0,a.av(0,n).b)?A.p(k.h(0,a.av(0,n).b))+", "+o.f:o.f)}}return k},
 bDn(a,b){var s,r=a.aI(b),q=r.y
-a.bW(r,"Completed","Kiran Kumar (Warehouse Lead)","scanned into "+new A.t(q,new A.awn(),A.j(q).i("t<1,c>")).aD(0,", "))
+a.bW(r,"Completed","Kiran Kumar (Warehouse Executive)","scanned into "+new A.t(q,new A.awn(),A.j(q).i("t<1,c>")).aD(0,", "))
 q=r.w
 s=q==null?null:a.aI(q)
 if(s!=null)a.nT(s,"Bin Allocated","System")
@@ -31139,7 +31139,7 @@ awf(a,b){var s,r,q,p,o,n,m,l=A.a([],t.s)
 for(s=b.length,r=a.a6,q=0;q<b.length;b.length===s||(0,A.n)(b),++q){p=a.aI(b[q])
 if(p==null||p.e!=="QC Pending")continue
 p.e="QC Requested"
-p.Q.push(new A.dI("2026-09-28 "+A.de(),"Kiran Kumar (Warehouse Lead)","Status \u2192 QC Requested \xb7 sent to the QC team","check"))
+p.Q.push(new A.dI("2026-09-28 "+A.de(),"Kiran Kumar (Warehouse Executive)","Status \u2192 QC Requested \xb7 sent to the QC team","check"))
 o=p.a
 n=a.dA(p)
 m=p.a
@@ -31148,7 +31148,7 @@ l.push(p.a)}if(l.length===0)return new A.aD("Nothing sent \xb7 only goods receip
 s=B.e.aD(l,", ")
 r=l.length===1?B.e.gF(l):null
 return new A.aD("QC request sent to the QC team \xb7 "+s,r)},
-bRV(a,b,c,d,e,f,g){var s,r,q,p,o,n,m,l,k=null,j="Kiran Kumar (Warehouse Lead)",i=a.aI(b)
+bRV(a,b,c,d,e,f,g){var s,r,q,p,o,n,m,l,k=null,j="Kiran Kumar (Warehouse Executive)",i=a.aI(b)
 i.toString
 s=A.a([],t.Rv)
 for(r=i.y,q=r.length,p=0;p<r.length;r.length===q||(0,A.n)(r),++p){o=r[p]
@@ -31180,7 +31180,7 @@ p=k.y
 o=A.j(p).i("t<1,bt>")
 p=A.w(new A.t(p,new A.ax_(),o),o.i("a_.E"))
 n=a.eP(A.eS(l,"2026-09-28","",p,r,q,"Issued",l,"DBN",s))
-a.bW(k,"Returned","Kiran Kumar (Warehouse Lead)","debit note "+n.a)
+a.bW(k,"Returned","Kiran Kumar (Warehouse Executive)","debit note "+n.a)
 a.fJ(k,n)
 s=k.w
 if(s==null)m=l
@@ -31350,7 +31350,7 @@ r.toString
 s.cx=A.dj("2026-09-28",a.cq(r).Q)
 a.bW(s,"Approved","Srinivas Rao (SCM Manager)","price difference approved")
 return new A.aD(b+" approved for payment",b)},
-bDy(a,b){var s,r,q,p,o,n,m="Kiran Kumar (Warehouse Lead)",l="In Transit",k=a.aI(b)
+bDy(a,b){var s,r,q,p,o,n,m="Kiran Kumar (Warehouse Executive)",l="In Transit",k=a.aI(b)
 for(s=k.y,r=s.length,q=0;q<s.length;s.length===r||(0,A.n)(s),++q){p=s[q]
 o=p.a
 a.wh(k.d,o,-p.b,"Transfer out",k.a,m)
@@ -31361,7 +31361,7 @@ o=a.cp(n,o)
 o.c=o.c+p.b}s=k.x1
 a.bW(k,l,m,s==null?k.x1=a.CW[1]:s)
 return new A.aD("Transfer dispatched \xb7 stock in transit",b)},
-bDz(a3,a4,a5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0=null,a1="Kiran Kumar (Warehouse Lead)",a2=a3.aI(a4)
+bDz(a3,a4,a5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0=null,a1="Kiran Kumar (Warehouse Executive)",a2=a3.aI(a4)
 for(s=a5!=null,r=a2.Q,q=a3.k3,p=A.j(q).i("i<1>"),o=a3.k2,n=0,m=0;l=a2.y,m<l.length;++m){k=l[m]
 l=s&&m<a5.length?a5[m]:k.b
 j=B.m.aB(l,0,k.b)
@@ -31423,7 +31423,7 @@ m=b.d
 l=n.b
 k=b.a6
 if(k==null)k=""
-a.wh(m,n.a,l,"Adjustment ("+k.toLowerCase()+")",b.a,"Kiran Kumar (Warehouse Lead)")
+a.wh(m,n.a,l,"Adjustment ("+k.toLowerCase()+")",b.a,"Kiran Kumar (Warehouse Executive)")
 j=n.r.length===0?null:A.bg(new A.i(q,new A.awO(n,b),p))
 if(j!=null)j.w=j.w+n.b}},
 axj(a,b){var s,r,q,p,o,n=a.pN(b.a),m=J.aG(n)
@@ -31493,7 +31493,7 @@ h.Q.push(new A.dI("2026-09-28 "+A.de(),f,"Status \u2192 Pending Approval \xb7 va
 h.e="Posted"
 h.Q.push(new A.dI("2026-09-28 "+A.de(),f,"Status \u2192 Posted \xb7 auto-posted (within limit)","check"))}s.push(h)
 n=!B.e.m(p,h.a)
-if(n)p.push(h.a)}}a.bW(e,"Completed","Kiran Kumar (Warehouse Lead)",""+s.length+" difference(s)")
+if(n)p.push(h.a)}}a.bW(e,"Completed","Kiran Kumar (Warehouse Executive)",""+s.length+" difference(s)")
 e=s.length
 return new A.aD("Count completed \xb7 "+(e===0?"no differences":""+e+" adjustment(s) created"),b)},
 bRQ(a,b){var s,r,q,p,o=a.aI(b),n=A.w(o.aF,t.N),m=n.length,l=a.CW,k=0,j=0
@@ -31503,7 +31503,7 @@ if(r!=null&&r.e==="Ready to Dispatch"){q=o.to
 if(q==null)q="Own fleet"
 p=o.x1
 A.bDg(a,s,q,p==null?l[0]:p,!0);++k}}n=""+k
-a.bW(o,"Dispatched","Kiran Kumar (Warehouse Lead)",n+" delivery(ies) invoiced")
+a.bW(o,"Dispatched","Kiran Kumar (Warehouse Executive)",n+" delivery(ies) invoiced")
 return new A.aD("Trip dispatched \xb7 "+n+" invoice(s) and shipment(s) created",b)},
 bRR(a,b,c,d,e,f){var s,r,q,p,o,n=null,m=A.a([],t.Rv)
 for(s=A.v(f),r=new A.bR(f,f.gp(f),s.i("bR<ar.E>")),s=s.i("ar.E"),q=0;r.q();){p=r.d
@@ -31755,7 +31755,7 @@ return s},
 ck(a,b,c,d,e,f,g,h,i,j,k,l){var s=A.eS(g,d,c,h,i,j,f,l,b,e)
 if(k!=null)B.e.t(s.z,k)
 return s},
-bY1(l0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2="QT",a3="2026-09-28",a4="W1",a5="Priya Sharma (Sales Exec)",a6="ITM-1011",a7="ITM-1014",a8=null,a9="2026-10-12",b0="2026-09-26",b1="W3",b2="C002",b3="ITM-1003",b4="ITM-1004",b5="2026-09-24",b6="C001",b7="ITM-1001",b8="ITM-1009",b9="2026-10-08",c0="QT-2026-0138",c1="2026-09-18",c2="W2",c3="C003",c4="ITM-1007",c5="SO-2026-0316",c6="SO",c7="Pending Approval",c8="ITM-1008",c9="ITM-1012",d0="2026-10-03",d1="Above \u20b95,00,000 approval limit",d2="SO-2026-0318",d3="2026-09-27",d4="ITM-1013",d5="2026-09-29",d6="SO-2026-0317",d7="C004",d8="DN-2026-0287",d9="2026-09-30",e0="SO-2026-0315",e1="2026-09-25",e2="ITM-1005",e3="ITM-1006",e4="SO-2026-0313",e5="2026-09-15",e6="C008",e7="DN-2026-0285",e8="INV/26-27/0212",e9="SO-2026-0312",f0="2026-09-12",f1="Delivered",f2="INV/26-27/0213",f3="2026-09-16",f4="B2607-WTR-03",f5="A-04",f6="Ravi Teja",f7="Suresh N",f8="Dispatched",f9="Safexpress",g0="Carrier assigned vehicle",g1="EWB 3218 4471 0092",g2="Own fleet",g3="INV",g4="2026-09-17",g5="Paid",g6="INV/26-27/0179",g7="Allocated",g8="NEFT",g9="Requested",h0="SR-2026-0030",h1="In Transit",h2="PR",h3="S001",h4="System",h5="ITM-1002",h6="Reorder check (auto)",h7="Approved",h8="S002",h9="Kiran Kumar (Warehouse Lead)",i0="PR-2026-0231",i1="S004",i2="PR-2026-0230",i3="S005",i4="PO",i5="Harish Varma (Buyer)",i6="2026-09-21",i7="PO-2026-0420",i8="PO-2026-0419",i9="Received",j0="S003",j1=1000,j2="GRN-2026-0297",j3="PO-2026-0418",j4="S007",j5="GRN-2026-0296",j6="PO-2026-0417",j7="PI-2026-0185",j8="RCV-01",j9="Completed",k0="Invoice verified \u2014 matches the purchase order and goods receipt",k1="Purchase receipt",k2="Released",k3="Expiring Soon",k4="In stock",k5="GRN-2026-0281",k6="Reserved",k7=new A.b_m(l0),k8=t.Rv,k9=A.ck(l0,a2,"QT-2026-0141",a3,a4,"Draft",a5,A.a([A.c8(l0,a6,150,160,0),A.c8(l0,a7,40,590,0)],k8),"C006",a8,a8,a8)
+bY1(l0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2="QT",a3="2026-09-28",a4="W1",a5="Priya Sharma (Sales Exec)",a6="ITM-1011",a7="ITM-1014",a8=null,a9="2026-10-12",b0="2026-09-26",b1="W3",b2="C002",b3="ITM-1003",b4="ITM-1004",b5="2026-09-24",b6="C001",b7="ITM-1001",b8="ITM-1009",b9="2026-10-08",c0="QT-2026-0138",c1="2026-09-18",c2="W2",c3="C003",c4="ITM-1007",c5="SO-2026-0316",c6="SO",c7="Pending Approval",c8="ITM-1008",c9="ITM-1012",d0="2026-10-03",d1="Above \u20b95,00,000 approval limit",d2="SO-2026-0318",d3="2026-09-27",d4="ITM-1013",d5="2026-09-29",d6="SO-2026-0317",d7="C004",d8="DN-2026-0287",d9="2026-09-30",e0="SO-2026-0315",e1="2026-09-25",e2="ITM-1005",e3="ITM-1006",e4="SO-2026-0313",e5="2026-09-15",e6="C008",e7="DN-2026-0285",e8="INV/26-27/0212",e9="SO-2026-0312",f0="2026-09-12",f1="Delivered",f2="INV/26-27/0213",f3="2026-09-16",f4="B2607-WTR-03",f5="A-04",f6="Ravi Teja",f7="Suresh N",f8="Dispatched",f9="Safexpress",g0="Carrier assigned vehicle",g1="EWB 3218 4471 0092",g2="Own fleet",g3="INV",g4="2026-09-17",g5="Paid",g6="INV/26-27/0179",g7="Allocated",g8="NEFT",g9="Requested",h0="SR-2026-0030",h1="In Transit",h2="PR",h3="S001",h4="System",h5="ITM-1002",h6="Reorder check (auto)",h7="Approved",h8="S002",h9="Kiran Kumar (Warehouse Executive)",i0="PR-2026-0231",i1="S004",i2="PR-2026-0230",i3="S005",i4="PO",i5="Harish Varma (Buyer)",i6="2026-09-21",i7="PO-2026-0420",i8="PO-2026-0419",i9="Received",j0="S003",j1=1000,j2="GRN-2026-0297",j3="PO-2026-0418",j4="S007",j5="GRN-2026-0296",j6="PO-2026-0417",j7="PI-2026-0185",j8="RCV-01",j9="Completed",k0="Invoice verified \u2014 matches the purchase order and goods receipt",k1="Purchase receipt",k2="Released",k3="Expiring Soon",k4="In stock",k5="GRN-2026-0281",k6="Reserved",k7=new A.b_m(l0),k8=t.Rv,k9=A.ck(l0,a2,"QT-2026-0141",a3,a4,"Draft",a5,A.a([A.c8(l0,a6,150,160,0),A.c8(l0,a7,40,590,0)],k8),"C006",a8,a8,a8)
 k9.ay=a9
 k7.$1(k9)
 k9=A.ck(l0,a2,"QT-2026-0140",b0,b1,"Sent",a5,A.a([A.c8(l0,b3,80,910,0),A.c8(l0,b4,2000,57,0)],k8),b2,a8,a8,a8)
@@ -38331,7 +38331,7 @@ j===$&&A.b()
 B.e.t(h,A.a([new A.ai("Legal entity",r,!1),new A.ai("Default warehouse",A.u(j.c,k,k,k,k,k,B.N,k,k),!1)],e))}if(s==="admin")h.push(new A.ai("Approval limit",A.u(A.af(25e5),k,k,k,k,k,B.N,k,k),!1))
 j=t.p
 h=A.a([new A.p6(h,k),B.iE,B.bko,B.cN,B.bki,B.e2],j)
-for(q=0;q<5;++q){p=B.jS[q]
+for(q=0;q<5;++q){p=B.jQ[q]
 e=new A.b1(8,8)
 s=p.a===f
 r=s?k:new A.biX(p)
@@ -59204,12 +59204,12 @@ c0=0}c1=a5+1
 c2=d2
 if(r)for(c3=0,c4=0,c5=1;;c4=b8,b8=c7){for(r=c4&255;;){if(c3===0)break
 d7.bP(c4)
-c2=(c2<<8^B.jQ[c2>>>24&255^r])>>>0;--c3}if(c5===c1)return c2
+c2=(c2<<8^B.jR[c2>>>24&255^r])>>>0;--c3}if(c5===c1)return c2
 if(c5>c1)throw A.h(A.e9("Data error."))
 r=d0.b
 b6=r[b6]
 b7=b6>>>8
-if(b9===0){b9=B.jR[c0];++c0
+if(b9===0){b9=B.jS[c0];++c0
 if(c0===512)c0=0}--b9
 q=b9===1?1:0
 c6=b6&255^q;++c5
@@ -59220,7 +59220,7 @@ continue}if(c6!==b8){c7=c6
 b6=b7
 continue}b6=r[b7]
 b7=b6>>>8
-if(b9===0){b9=B.jR[c0];++c0
+if(b9===0){b9=B.jS[c0];++c0
 if(c0===512)c0=0}q=b9===1?1:0
 c6=b6&255^q;++c5
 if(c5===c1){c7=b8
@@ -59231,7 +59231,7 @@ b6=b7
 c3=2
 continue}b6=r[b7]
 b7=b6>>>8
-if(b9===0){b9=B.jR[c0];++c0
+if(b9===0){b9=B.jS[c0];++c0
 if(c0===512)c0=0}q=b9===1?1:0
 c6=b6&255^q;++c5
 if(c5===c1){c7=b8
@@ -59241,19 +59241,19 @@ continue}if(c6!==b8){c7=c6
 b6=b7
 c3=3
 continue}b6=r[b7]
-if(b9===0){b9=B.jR[c0];++c0
+if(b9===0){b9=B.jS[c0];++c0
 if(c0===512)c0=0}q=b9===1?1:0
 c3=(b6&255^q)+4
 b6=r[b6>>>8]
 b7=b6>>>8
-if(b9===0){b9=B.jR[c0];++c0
+if(b9===0){b9=B.jS[c0];++c0
 if(c0===512)c0=0}r=b9===1?1:0
 c7=b6&255^r
 c5=c5+1+1
 b6=b7}else for(c8=b8,c3=0,c4=0,c5=1;;c4=c8,c8=c9){if(c3>0){for(r=c4&255;;){if(c3===1)break
 d7.bP(c4)
-c2=c2<<8^B.jQ[c2>>>24&255^r];--c3}d7.bP(c4)
-c2=(c2<<8^B.jQ[c2>>>24&255^r])>>>0}if(c5>c1)throw A.h(A.e9(d1))
+c2=c2<<8^B.jR[c2>>>24&255^r];--c3}d7.bP(c4)
+c2=(c2<<8^B.jR[c2>>>24&255^r])>>>0}if(c5>c1)throw A.h(A.e9(d1))
 if(c5===c1)return c2
 r=1e5*d0.a
 if(b6>=r)throw A.h(A.e9(d3))
@@ -59263,10 +59263,10 @@ c6=b6&255
 b6=b6>>>8;++c5
 c3=0
 if(c6!==c8){d7.bP(c8)
-c2=(c2<<8^B.jQ[c2>>>24&255^c8&255])>>>0
+c2=(c2<<8^B.jR[c2>>>24&255^c8&255])>>>0
 c9=c6
 continue}if(c5===c1){d7.bP(c8)
-c2=(c2<<8^B.jQ[c2>>>24&255^c8&255])>>>0
+c2=(c2<<8^B.jR[c2>>>24&255^c8&255])>>>0
 c9=c8
 continue}if(b6>=r)throw A.h(A.e9(d3))
 b6=q[b6]
@@ -119710,7 +119710,7 @@ A.arD.prototype={}
 A.ag5.prototype={}
 A.aD.prototype={}
 A.TB.prototype={
-aHI(a,b){var s=this,r=A.bg(new A.i(B.jS,new A.aeV(a,b),t.OD))
+aHI(a,b){var s=this,r=A.bg(new A.i(B.jQ,new A.aeV(a,b),t.OD))
 if(r==null)return!1
 s.e=r
 if(r.d==="supplier")s.a="sp_po"
@@ -121536,7 +121536,7 @@ $S:0}
 A.b_H.prototype={
 $0(){var s=$.d(),r=this.a,q=s.aI(r)
 q.toString
-s.bW(q,"Loading","Kiran Kumar (Warehouse Lead)","dock 2")
+s.bW(q,"Loading","Kiran Kumar (Warehouse Executive)","dock 2")
 return new A.aD("Loading started at dock 2",r)},
 $S:32}
 A.b0U.prototype={
@@ -121715,7 +121715,7 @@ $2(a,b){var s,r=this,q="status"
 if(J.f(a.h(0,q),"Delivered")){s=r.a
 A.bvZ($.d(),s.a,"Received by "+A.p(a.h(0,"rcv_by"))+" on "+A.p(a.h(0,"dd")))
 A.bn(new A.aD(s.a+" delivered \xb7 received by "+A.p(a.h(0,"rcv_by")),r.b))}else{s=r.c
-if(s!=null)$.d().nT(s,A.q(a.h(0,q)),"Kiran Kumar (Warehouse Lead)")
+if(s!=null)$.d().nT(s,A.q(a.h(0,q)),"Kiran Kumar (Warehouse Executive)")
 A.bn(new A.aD(r.a.a+" \xb7 "+A.p(a.h(0,q)),r.b))}return!1},
 $S:6}
 A.b89.prototype={
@@ -144505,6 +144505,12 @@ B.Fs=s([5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],t.t)
 B.aS8=s(["A-01","A-02","A-03","A-04"],t.s)
 B.aSb=s(["AUTO","SEMI"],t.s)
 B.ic=s(["Active","Inactive"],t.s)
+B.SV=new A.np("admin@impacgo.com","Admin@123","Srinivas Rao","admin","SCM Manager \xb7 All modules",null)
+B.SW=new A.np("executive@impacgo.com","Exec@123","Priya Sharma","exec","Purchase & Sales Executive",null)
+B.SX=new A.np("store@impacgo.com","Store@123","Kiran Kumar","store","Warehouse Executive \xb7 Stores & QC",null)
+B.ST=new A.np("delivery@impacgo.com","Delivery@123","Suresh Naidu","delivery","Delivery Staff",null)
+B.SU=new A.np("supplier@andhracorrugators.com","Supplier@123","N. Prasad","supplier","Supplier \xb7 Andhra Corrugators","S001")
+B.jQ=s([B.SV,B.SW,B.SX,B.ST,B.SU],A.av("C<np>"))
 B.aSj=s(["Approved","Paid"],t.s)
 B.aSk=s(["Approved","Rejected","Ordered"],t.s)
 B.aSl=s(["Arial"],t.s)
@@ -144625,7 +144631,7 @@ B.aUd=s(["Name","Category","Cost","Price"],t.s)
 B.FL=s(["Name","City","State"],t.s)
 B.aUk=s(["None","Batch","Serial"],t.s)
 B.FM=s([0,21,51,121,151,191,271,321,360],t.n)
-B.jQ=s([0,79764919,159529838,222504665,319059676,398814059,445009330,507990021,638119352,583659535,797628118,726387553,890018660,835552979,1015980042,944750013,1276238704,1221641927,1167319070,1095957929,1595256236,1540665371,1452775106,1381403509,1780037320,1859660671,1671105958,1733955601,2031960084,2111593891,1889500026,1952343757,2552477408,2632100695,2443283854,2506133561,2334638140,2414271883,2191915858,2254759653,3190512472,3135915759,3081330742,3009969537,2905550212,2850959411,2762807018,2691435357,3560074640,3505614887,3719321342,3648080713,3342211916,3287746299,3467911202,3396681109,4063920168,4143685023,4223187782,4286162673,3779000052,3858754371,3904687514,3967668269,881225847,809987520,1023691545,969234094,662832811,591600412,771767749,717299826,311336399,374308984,453813921,533576470,25881363,88864420,134795389,214552010,2023205639,2086057648,1897238633,1976864222,1804852699,1867694188,1645340341,1724971778,1587496639,1516133128,1461550545,1406951526,1302016099,1230646740,1142491917,1087903418,2896545431,2825181984,2770861561,2716262478,3215044683,3143675388,3055782693,3001194130,2326604591,2389456536,2200899649,2280525302,2578013683,2640855108,2418763421,2498394922,3769900519,3832873040,3912640137,3992402750,4088425275,4151408268,4197601365,4277358050,3334271071,3263032808,3476998961,3422541446,3585640067,3514407732,3694837229,3640369242,1762451694,1842216281,1619975040,1682949687,2047383090,2127137669,1938468188,2001449195,1325665622,1271206113,1183200824,1111960463,1543535498,1489069629,1434599652,1363369299,622672798,568075817,748617968,677256519,907627842,853037301,1067152940,995781531,51762726,131386257,177728840,240578815,269590778,349224269,429104020,491947555,4046411278,4126034873,4172115296,4234965207,3794477266,3874110821,3953728444,4016571915,3609705398,3555108353,3735388376,3664026991,3290680682,3236090077,3449943556,3378572211,3174993278,3120533705,3032266256,2961025959,2923101090,2868635157,2813903052,2742672763,2604032198,2683796849,2461293480,2524268063,2284983834,2364738477,2175806836,2238787779,1569362073,1498123566,1409854455,1355396672,1317987909,1246755826,1192025387,1137557660,2072149281,2135122070,1912620623,1992383480,1753615357,1816598090,1627664531,1707420964,295390185,358241886,404320391,483945776,43990325,106832002,186451547,266083308,932423249,861060070,1041341759,986742920,613929101,542559546,756411363,701822548,3316196985,3244833742,3425377559,3370778784,3601682597,3530312978,3744426955,3689838204,3819031489,3881883254,3928223919,4007849240,4037393693,4100235434,4180117107,4259748804,2310601993,2373574846,2151335527,2231098320,2596047829,2659030626,2470359227,2550115596,2947551409,2876312838,2788305887,2733848168,3165939309,3094707162,3040238851,2985771188],t.t)
+B.jR=s([0,79764919,159529838,222504665,319059676,398814059,445009330,507990021,638119352,583659535,797628118,726387553,890018660,835552979,1015980042,944750013,1276238704,1221641927,1167319070,1095957929,1595256236,1540665371,1452775106,1381403509,1780037320,1859660671,1671105958,1733955601,2031960084,2111593891,1889500026,1952343757,2552477408,2632100695,2443283854,2506133561,2334638140,2414271883,2191915858,2254759653,3190512472,3135915759,3081330742,3009969537,2905550212,2850959411,2762807018,2691435357,3560074640,3505614887,3719321342,3648080713,3342211916,3287746299,3467911202,3396681109,4063920168,4143685023,4223187782,4286162673,3779000052,3858754371,3904687514,3967668269,881225847,809987520,1023691545,969234094,662832811,591600412,771767749,717299826,311336399,374308984,453813921,533576470,25881363,88864420,134795389,214552010,2023205639,2086057648,1897238633,1976864222,1804852699,1867694188,1645340341,1724971778,1587496639,1516133128,1461550545,1406951526,1302016099,1230646740,1142491917,1087903418,2896545431,2825181984,2770861561,2716262478,3215044683,3143675388,3055782693,3001194130,2326604591,2389456536,2200899649,2280525302,2578013683,2640855108,2418763421,2498394922,3769900519,3832873040,3912640137,3992402750,4088425275,4151408268,4197601365,4277358050,3334271071,3263032808,3476998961,3422541446,3585640067,3514407732,3694837229,3640369242,1762451694,1842216281,1619975040,1682949687,2047383090,2127137669,1938468188,2001449195,1325665622,1271206113,1183200824,1111960463,1543535498,1489069629,1434599652,1363369299,622672798,568075817,748617968,677256519,907627842,853037301,1067152940,995781531,51762726,131386257,177728840,240578815,269590778,349224269,429104020,491947555,4046411278,4126034873,4172115296,4234965207,3794477266,3874110821,3953728444,4016571915,3609705398,3555108353,3735388376,3664026991,3290680682,3236090077,3449943556,3378572211,3174993278,3120533705,3032266256,2961025959,2923101090,2868635157,2813903052,2742672763,2604032198,2683796849,2461293480,2524268063,2284983834,2364738477,2175806836,2238787779,1569362073,1498123566,1409854455,1355396672,1317987909,1246755826,1192025387,1137557660,2072149281,2135122070,1912620623,1992383480,1753615357,1816598090,1627664531,1707420964,295390185,358241886,404320391,483945776,43990325,106832002,186451547,266083308,932423249,861060070,1041341759,986742920,613929101,542559546,756411363,701822548,3316196985,3244833742,3425377559,3370778784,3601682597,3530312978,3744426955,3689838204,3819031489,3881883254,3928223919,4007849240,4037393693,4100235434,4180117107,4259748804,2310601993,2373574846,2151335527,2231098320,2596047829,2659030626,2470359227,2550115596,2947551409,2876312838,2788305887,2733848168,3165939309,3094707162,3040238851,2985771188],t.t)
 B.aUp=s(["Open","Done"],t.s)
 B.tP=s(["Sent to Supplier","Partially Received","Received","Closed"],t.s)
 B.aUs=s([23,114,69,56,80,144],t.t)
@@ -144823,7 +144829,7 @@ B.aW4=s([B.q2,B.U4,B.U3,B.U5,B.U6,B.wx,B.U7,B.Ua,B.U8,B.U2,B.U9,B.Ub,B.Uc,B.wz],
 B.d3=new A.jx(1,"fuchsia")
 B.aW7=s([B.bQ,B.d3,B.aU,B.d4,B.co,B.d5],A.av("C<jx>"))
 B.aW9=s(["Sales register","Sales analysis","Customer ledger","Receivables ageing","Outstanding sales orders","Pending deliveries","Delivery schedule","Purchase register","Supplier ledger","Outstanding POs","Supplier performance","Warehouse stock summary","Stock valuation","Stock ageing","Batch expiry report"],t.s)
-B.jR=s([619,720,127,481,931,816,813,233,566,247,985,724,205,454,863,491,741,242,949,214,733,859,335,708,621,574,73,654,730,472,419,436,278,496,867,210,399,680,480,51,878,465,811,169,869,675,611,697,867,561,862,687,507,283,482,129,807,591,733,623,150,238,59,379,684,877,625,169,643,105,170,607,520,932,727,476,693,425,174,647,73,122,335,530,442,853,695,249,445,515,909,545,703,919,874,474,882,500,594,612,641,801,220,162,819,984,589,513,495,799,161,604,958,533,221,400,386,867,600,782,382,596,414,171,516,375,682,485,911,276,98,553,163,354,666,933,424,341,533,870,227,730,475,186,263,647,537,686,600,224,469,68,770,919,190,373,294,822,808,206,184,943,795,384,383,461,404,758,839,887,715,67,618,276,204,918,873,777,604,560,951,160,578,722,79,804,96,409,713,940,652,934,970,447,318,353,859,672,112,785,645,863,803,350,139,93,354,99,820,908,609,772,154,274,580,184,79,626,630,742,653,282,762,623,680,81,927,626,789,125,411,521,938,300,821,78,343,175,128,250,170,774,972,275,999,639,495,78,352,126,857,956,358,619,580,124,737,594,701,612,669,112,134,694,363,992,809,743,168,974,944,375,748,52,600,747,642,182,862,81,344,805,988,739,511,655,814,334,249,515,897,955,664,981,649,113,974,459,893,228,433,837,553,268,926,240,102,654,459,51,686,754,806,760,493,403,415,394,687,700,946,670,656,610,738,392,760,799,887,653,978,321,576,617,626,502,894,679,243,440,680,879,194,572,640,724,926,56,204,700,707,151,457,449,797,195,791,558,945,679,297,59,87,824,713,663,412,693,342,606,134,108,571,364,631,212,174,643,304,329,343,97,430,751,497,314,983,374,822,928,140,206,73,263,980,736,876,478,430,305,170,514,364,692,829,82,855,953,676,246,369,970,294,750,807,827,150,790,288,923,804,378,215,828,592,281,565,555,710,82,896,831,547,261,524,462,293,465,502,56,661,821,976,991,658,869,905,758,745,193,768,550,608,933,378,286,215,979,792,961,61,688,793,644,986,403,106,366,905,644,372,567,466,434,645,210,389,550,919,135,780,773,635,389,707,100,626,958,165,504,920,176,193,713,857,265,203,50,668,108,645,990,626,197,510,357,358,850,858,364,936,638],t.t)
+B.jS=s([619,720,127,481,931,816,813,233,566,247,985,724,205,454,863,491,741,242,949,214,733,859,335,708,621,574,73,654,730,472,419,436,278,496,867,210,399,680,480,51,878,465,811,169,869,675,611,697,867,561,862,687,507,283,482,129,807,591,733,623,150,238,59,379,684,877,625,169,643,105,170,607,520,932,727,476,693,425,174,647,73,122,335,530,442,853,695,249,445,515,909,545,703,919,874,474,882,500,594,612,641,801,220,162,819,984,589,513,495,799,161,604,958,533,221,400,386,867,600,782,382,596,414,171,516,375,682,485,911,276,98,553,163,354,666,933,424,341,533,870,227,730,475,186,263,647,537,686,600,224,469,68,770,919,190,373,294,822,808,206,184,943,795,384,383,461,404,758,839,887,715,67,618,276,204,918,873,777,604,560,951,160,578,722,79,804,96,409,713,940,652,934,970,447,318,353,859,672,112,785,645,863,803,350,139,93,354,99,820,908,609,772,154,274,580,184,79,626,630,742,653,282,762,623,680,81,927,626,789,125,411,521,938,300,821,78,343,175,128,250,170,774,972,275,999,639,495,78,352,126,857,956,358,619,580,124,737,594,701,612,669,112,134,694,363,992,809,743,168,974,944,375,748,52,600,747,642,182,862,81,344,805,988,739,511,655,814,334,249,515,897,955,664,981,649,113,974,459,893,228,433,837,553,268,926,240,102,654,459,51,686,754,806,760,493,403,415,394,687,700,946,670,656,610,738,392,760,799,887,653,978,321,576,617,626,502,894,679,243,440,680,879,194,572,640,724,926,56,204,700,707,151,457,449,797,195,791,558,945,679,297,59,87,824,713,663,412,693,342,606,134,108,571,364,631,212,174,643,304,329,343,97,430,751,497,314,983,374,822,928,140,206,73,263,980,736,876,478,430,305,170,514,364,692,829,82,855,953,676,246,369,970,294,750,807,827,150,790,288,923,804,378,215,828,592,281,565,555,710,82,896,831,547,261,524,462,293,465,502,56,661,821,976,991,658,869,905,758,745,193,768,550,608,933,378,286,215,979,792,961,61,688,793,644,986,403,106,366,905,644,372,567,466,434,645,210,389,550,919,135,780,773,635,389,707,100,626,958,165,504,920,176,193,713,857,265,203,50,668,108,645,990,626,197,510,357,358,850,858,364,936,638],t.t)
 B.Sq=new A.Eu(0,"topLeft")
 B.St=new A.Eu(3,"bottomRight")
 B.bnP=new A.rx(B.Sq,B.St)
@@ -144852,12 +144858,6 @@ B.nQ=s([0,1,4,5,16,17,20,21,64,65,68,69,80,81,84,85,256,257,260,261,272,273,276,
 B.FR=s([127,127,191,127,159,191,223,127,143,159,175,191,207,223,239,127,135,143,151,159,167,175,183,191,199,207,215,223,231,239,247,127,131,135,139,143,147,151,155,159,163,167,171,175,179,183,187,191,195,199,203,207,211,215,219,223,227,231,235,239,243,247,251,127,129,131,133,135,137,139,141,143,145,147,149,151,153,155,157,159,161,163,165,167,169,171,173,175,177,179,181,183,185,187,189,191,193,195,197,199,201,203,205,207,209,211,213,215,217,219,221,223,225,227,229,231,233,235,237,239,241,243,245,247,249,251,253,127],t.t)
 B.FS=s([7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],t.t)
 B.aWE=s(["Sent to Supplier","Partially Received","Received","Closed","Cancelled"],t.s)
-B.SW=new A.np("admin@impacgo.com","Admin@123","Srinivas Rao","admin","SCM Manager \xb7 All modules",null)
-B.SX=new A.np("executive@impacgo.com","Exec@123","Priya Sharma","exec","Purchase & Sales Executive",null)
-B.SV=new A.np("store@impacgo.com","Store@123","Kiran Kumar","store","Store Keeper \xb7 Warehouse & QC",null)
-B.ST=new A.np("delivery@impacgo.com","Delivery@123","Suresh Naidu","delivery","Delivery Staff",null)
-B.SU=new A.np("supplier@andhracorrugators.com","Supplier@123","N. Prasad","supplier","Supplier \xb7 Andhra Corrugators","S001")
-B.jS=s([B.SW,B.SX,B.SV,B.ST,B.SU],A.av("C<np>"))
 B.nR=s([28679,28679,31752,-32759,-31735,-30711,-29687,-28663,29703,29703,30727,30727,-27639,-26615,-25591,-24567],t.t)
 B.aWQ=s(["click","scroll"],t.s)
 B.V6=new A.Ai()
@@ -151906,7 +151906,7 @@ s($,"c8l","byR",()=>A.bTu(1))
 s($,"c8m","bKP",()=>{var q=$.byR()
 return A.bOP(q.ga_(q))})
 s($,"c6F","d",()=>{var q=t.s,p=t.N
-p=new A.TB(B.e.gF(B.jS),A.a(["IMPACGO Chain Pvt Ltd","IMPACGO Distribution LLP"],q),A.a([],t.m1),A.a([],A.av("C<kt>")),A.a([],t.kp),A.B(p,A.av("G<jN>")),A.a([],t.rc),A.a([],q),A.a([],t.VF),A.a([],t.m9),A.a([],t.HV),A.a([],t.Sd),A.a([],q),new A.arD(),A.B(p,t.Hb),A.a([],A.av("C<uz>")),A.a([],A.av("C<oF>")),A.a([],t.Jl),A.a([],t.AE),A.a([],t.vL),A.a([],t.TP),A.B(p,A.av("bd<c,kZ>")),A.a([],t.NF),A.a([],t.RU),A.a([],t.qu),A.a([],t.Yx),A.a([],t.kM),A.B(p,p),A.a([],t.ly),A.a([],t.go),A.a([],t.aF),A.a([],t.OO),A.a([],t.Zo),A.a([],t.Gx),A.a([],t.Cm),A.a([],t.GN),A.a([],t.FX),A.a([],t.F9),A.a([],t.d7),A.a([],t.KC),A.a([],t.Tz),A.a([],t.Bg),A.a([],t.eV),A.a([],t.UV),A.a([],A.av("C<E8>")),A.a([],t.hi),A.a([],t.NG),$.aC())
+p=new A.TB(B.e.gF(B.jQ),A.a(["IMPACGO Chain Pvt Ltd","IMPACGO Distribution LLP"],q),A.a([],t.m1),A.a([],A.av("C<kt>")),A.a([],t.kp),A.B(p,A.av("G<jN>")),A.a([],t.rc),A.a([],q),A.a([],t.VF),A.a([],t.m9),A.a([],t.HV),A.a([],t.Sd),A.a([],q),new A.arD(),A.B(p,t.Hb),A.a([],A.av("C<uz>")),A.a([],A.av("C<oF>")),A.a([],t.Jl),A.a([],t.AE),A.a([],t.vL),A.a([],t.TP),A.B(p,A.av("bd<c,kZ>")),A.a([],t.NF),A.a([],t.RU),A.a([],t.qu),A.a([],t.Yx),A.a([],t.kM),A.B(p,p),A.a([],t.ly),A.a([],t.go),A.a([],t.aF),A.a([],t.OO),A.a([],t.Zo),A.a([],t.Gx),A.a([],t.Cm),A.a([],t.GN),A.a([],t.FX),A.a([],t.F9),A.a([],t.d7),A.a([],t.KC),A.a([],t.Tz),A.a([],t.Bg),A.a([],t.eV),A.a([],t.UV),A.a([],A.av("C<E8>")),A.a([],t.hi),A.a([],t.NG),$.aC())
 p.afC()
 return p})
 s($,"ca3","mf",()=>J.rZ(B.h6.gcn(B.h6)))

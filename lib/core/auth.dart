@@ -14,7 +14,7 @@ class AppUser {
 const demoUsers = [
   AppUser('admin@impacgo.com', 'Admin@123', 'Srinivas Rao', 'admin', 'SCM Manager · All modules'),
   AppUser('executive@impacgo.com', 'Exec@123', 'Priya Sharma', 'exec', 'Purchase & Sales Executive'),
-  AppUser('store@impacgo.com', 'Store@123', 'Kiran Kumar', 'store', 'Store Keeper · Warehouse & QC'),
+  AppUser('store@impacgo.com', 'Store@123', 'Kiran Kumar', 'store', 'Warehouse Executive · Stores & QC'),
   AppUser('delivery@impacgo.com', 'Delivery@123', 'Suresh Naidu', 'delivery', 'Delivery Staff'),
   // a supplier's login: sees only the Supplier Portal, with its own requests for quotation, orders and invoices
   AppUser('supplier@andhracorrugators.com', 'Supplier@123', 'N. Prasad', 'supplier', 'Supplier · Andhra Corrugators', party: 'S001'),
@@ -23,7 +23,7 @@ const demoUsers = [
 /// Our own staff (not supplier logins), e.g. for "Requested By".
 List<AppUser> get staffUsers => demoUsers.where((u) => u.role != 'supplier').toList();
 
-/// The role of a person, e.g. "Store Keeper" ('' when the name is not a user).
+/// The role of a person, e.g. "Warehouse Executive" ('' when the name is not a user).
 String roleOfName(String name) {
   final u = demoUsers.where((u) => u.name == name).firstOrNull;
   return u == null ? '' : u.title.split(' · ').first;
