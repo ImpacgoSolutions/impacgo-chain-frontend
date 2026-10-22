@@ -219,7 +219,7 @@ void openDoc(String id) {
   if (d == null) return;
   if (d.type == 'PR' && d.status == 'Draft') {
     // not submitted yet: show the request as its form, ready to change, attach and submit
-    openFormPage('${docTitle(d.type)} · ${d.id} · Draft', DocForm(d.type, party: d.party, editId: d.id), headerActions: [AttachPin(d.id)]);
+    openFormPage('${docTitle(d.type)} · ${d.id} · Draft', DocForm(d.type, party: d.party, editId: d.id), headerActions: [AttachPin(d.id)], subtitle: d.type == 'PR' ? _prSubtitle : null);
     return;
   }
   if (const ['PI', 'INV'].contains(d.type)) {
@@ -1469,7 +1469,7 @@ bool canEditDoc(Doc d) => editableStatus[d.type]?.contains(d.status) ?? false;
 
 void editDoc(Doc d) {
   closeAll();
-  openFormPage('Edit ${docTitle(d.type)} · ${d.id}', DocForm(d.type, party: d.party, editId: d.id), headerActions: [AttachPin(d.id)]);
+  openFormPage('Edit ${docTitle(d.type)} · ${d.id}', DocForm(d.type, party: d.party, editId: d.id), headerActions: [AttachPin(d.id)], subtitle: d.type == 'PR' ? _prSubtitle : null);
 }
 
 void openDocForm(String t, {String? party}) {
@@ -1477,15 +1477,19 @@ void openDocForm(String t, {String? party}) {
   final missing = [
     if (S.items.isEmpty) 'an item (Setup → Items)',
     if (pt == 'C' && S.customers.isEmpty) 'a customer (Setup → Customers)',
-    if (pt == 'S' && S.suppliers.isEmpty) 'a supplier (Setup → Suppliers)',
+    // a purchase request can be raised before the supplier is known
+    if (pt == 'S' && t != 'PR' && S.suppliers.isEmpty) 'a supplier (Setup → Suppliers)',
     if ((t == 'QT' || t == 'SO') && S.salesPersons.isEmpty) 'a sales person (Setup → Sales & Delivery Team)',
   ];
   if (missing.isNotEmpty) {
     toast('First add ${missing.join(' and ')}');
     return;
   }
-  openFormPage('New ${docTitle(t)}', DocForm(t, party: party));
+  openFormPage('New ${docTitle(t)}', DocForm(t, party: party), subtitle: t == 'PR' ? _prSubtitle : null);
 }
+
+/// A purchase request has no mandatory fields.
+const _prSubtitle = 'Fill in what you need and save';
 
 // ================================================================ searchable item picker (line items)
 /// Line-item "Item" box: shows the chosen item; clicking opens a search list.
@@ -1645,9 +1649,11 @@ class DocForm extends StatefulWidget {
   final String? fromId;
   /// Quotation made from this opportunity: the form starts filled in from it.
   final String? fromOppId;
+  /// Purchase order from a request: the request's supplier whose lines this order takes ('' = lines without a supplier).
+  final String? fromSup;
   /// Shows the saved document exactly as its form, but not changeable (no Save / Cancel buttons).
   final bool readOnly;
-  const DocForm(this.t, {super.key, this.party, this.editId, this.fromId, this.fromOppId, this.readOnly = false});
+  const DocForm(this.t, {super.key, this.party, this.editId, this.fromId, this.fromOppId, this.fromSup, this.readOnly = false});
   @override
   State<DocForm> createState() => _DocFormState();
 }
@@ -1666,8 +1672,11 @@ class _DocFormLine {
   String taxCode;
   String wh;
   String delivDate;
+  /// Purchase request: the supplier of this line ('' = not chosen yet).
+  String sup;
 
   _DocFormLine({
+    this.sup = '',
     required this.item,
     required double qty,
     required double rate,
@@ -1859,6 +1868,8 @@ class _DocFormState extends State<DocForm> {
       _autoFillParty(party);
     }
     _add();
+    // a purchase request has no supplier at the top: the supplier it was opened for goes on the first line
+    if (widget.t == 'PR' && party.isNotEmpty) lines.first.sup = party;
     final src = widget.editId ?? widget.fromId;
     final e = src == null ? null : S.doc(src);
     if (e != null) {
@@ -1930,11 +1941,14 @@ class _DocFormState extends State<DocForm> {
       for (final l in lines) {
         l.dispose();
       }
+      // a purchase order from a request takes the lines of one supplier of that request
+      final src = widget.t == 'PO' && e.type == 'PR' && widget.fromSup != null ? e.lines.where((l) => S.lineSup(e, l) == widget.fromSup).toList() : e.lines;
       lines
         ..clear()
-        ..addAll(e.lines.map((l) {
+        ..addAll((src.isEmpty ? e.lines : src).map((l) {
           final p = S.items.firstWhere((x) => x.id == l.item, orElse: () => S.items.first);
           return _DocFormLine(
+            sup: widget.t == 'PR' ? (l.sup.isNotEmpty ? l.sup : (e.party ?? '')) : '',
             item: l.item,
             qty: l.qty.abs().toDouble(),
             rate: l.rate,
@@ -2148,7 +2162,6 @@ class _DocFormState extends State<DocForm> {
       if (widget.t == 'TR' && to.isEmpty) 'To Warehouse',
       if (widget.t == 'ADJ' && reason.isEmpty) 'Reason',
       if (widget.t == 'ADJ' && (_xs['adj_type'] ?? '').isEmpty) 'Adjustment Type',
-      if (widget.t == 'PR' && (_xs['dept'] ?? '').isEmpty) 'Department',
     ];
     if (unchosen.isNotEmpty) {
       toast('Please fill: ${unchosen.join(', ')}');
@@ -2189,10 +2202,7 @@ class _DocFormState extends State<DocForm> {
       }
     }
     if (widget.t == 'PR') {
-      if (_c('purpose').text.trim().isEmpty) {
-        toast('Please fill: Purpose / Justification');
-        return;
-      }
+      // nothing on a purchase request is mandatory: only the dates must make sense
       if (_c('req_by', addDays(todayStr(), 7)).text.compareTo(docDate) < 0) {
         toast('Required By Date cannot be before Request Date');
         return;
@@ -2215,6 +2225,7 @@ class _DocFormState extends State<DocForm> {
     final rates = <double>[]; // the rates shown on the form are the rates saved
     final batchNos = <String>[]; // batch / serial numbers typed for transfers and adjustments
     final descs = <String>[];
+    final sups = <String>[]; // purchase request: each line's supplier
     final freeOk = widget.t == 'PR' || widget.t == 'PO';
     for (final l in lines) {
       final q = l.qty.toInt();
@@ -2229,8 +2240,10 @@ class _DocFormState extends State<DocForm> {
         return;
       }
       if (l.item.isEmpty) {
-        l.item = S.nonStockItem(desc, l.hsnCtl.text.trim(), l.uom, l.taxRate.round(), l.rate * _fx, party.isEmpty ? null : party);
+        final s = widget.t == 'PR' ? l.sup : party;
+        l.item = S.nonStockItem(desc, l.hsnCtl.text.trim(), l.uom, l.taxRate.round(), l.rate * _fx, s.isEmpty ? null : s);
       }
+      sups.add(l.sup);
       rows.add((item: l.item, qty: q));
       batchNos.add(widget.t == 'TR' || widget.t == 'ADJ' ? l.batchCtl.text.trim() : '');
       rates.add(l.rate * _fx); // saved in ₹
@@ -2303,7 +2316,13 @@ class _DocFormState extends State<DocForm> {
         d.purpose = _c('purpose').text.trim();
         d.need = _c('req_by', addDays(todayStr(), 7)).text;
         d.requester = _xs['req_by_person'] ?? S.user?.name ?? demoUsers.first.name;
-        d.dept = _xs['dept'] ?? 'Stores';
+        d.dept = (_xs['dept'] ?? '').isEmpty ? null : _xs['dept'];
+        // each line keeps its own supplier; the request's supplier is set only when every line has the same one
+        for (var i = 0; i < d.lines.length && i < sups.length; i++) {
+          d.lines[i].sup = sups[i];
+        }
+        final distinct = sups.toSet();
+        d.party = distinct.length == 1 && distinct.first.isNotEmpty ? distinct.first : null;
       }
     }
     void keepAddresses(Doc d) {
@@ -2349,7 +2368,7 @@ class _DocFormState extends State<DocForm> {
     }
     if (widget.fromId != null) {
       // order made from a request: link both, then show it in the Purchase Orders list
-      final res = S.prOrdered(widget.fromId!, d.id);
+      final res = S.prOrdered(widget.fromId!, d.id, forSup: widget.fromSup);
       closeAll();
       S.go(S.dt['PO']!.view);
       S.refresh();
@@ -2415,7 +2434,7 @@ class _DocFormState extends State<DocForm> {
               const Icon(Icons.info_outline, size: 16, color: C.blue600),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(_opt ? 'Fields marked * are mandatory; the rest are optional. The document number is generated automatically from Setup > Number Series.' : 'Only mandatory fields (*) are shown. The document number is generated automatically from Setup > Number Series.',
+                child: Text(pr ? 'Fill in what you need — nothing on a request is mandatory. Choose the supplier on each line: items from different suppliers become separate purchase orders. The request number is generated automatically.' : _opt ? 'Fields marked * are mandatory; the rest are optional. The document number is generated automatically from Setup > Number Series.' : 'Only mandatory fields (*) are shown. The document number is generated automatically from Setup > Number Series.',
                     style: const TextStyle(fontSize: 11.5, color: C.soft, fontWeight: FontWeight.w500)),
               ),
             ]),
@@ -2426,13 +2445,14 @@ class _DocFormState extends State<DocForm> {
           SizedBox(width: half, child: _readOnly('${docTitle(widget.t)} No.', widget.editId ?? '${S.dt[widget.t]!.prefix}${(S.dt[widget.t]!.seq + 1).toString().padLeft(4, '0')}')),
           if (widget.fromId != null) SizedBox(width: half, child: _readOnly(widget.t == 'SO' ? 'Against Quotation' : 'Against Request', widget.fromId!)),
           if (so) SizedBox(width: half, child: _date('Order Date', orderDateCtl, req: true)),
-          if (dateLabel.containsKey(widget.t)) SizedBox(width: half, child: _date(dateLabel[widget.t]!, _c('doc_date', todayStr()), req: true)),
+          if (dateLabel.containsKey(widget.t)) SizedBox(width: half, child: _date(dateLabel[widget.t]!, _c('doc_date', todayStr()), req: !pr)),
           if (pt == 'C') SizedBox(width: half, child: _dd('Customer', party, S.customers.where((x) => x.status != 'Inactive' || x.id == party).map((x) => Opt(x.id, x.name)).toList(), (v) {
             party = v;
             quotationRef = '';
             _autoFillParty(v);
           }, req: true)),
-          if (pt == 'S')
+          // a purchase request chooses the supplier on each line (different items can come from different suppliers)
+          if (pt == 'S' && !pr)
             SizedBox(
                 width: half,
                 child: _dd('Supplier', party, [
@@ -2442,15 +2462,15 @@ class _DocFormState extends State<DocForm> {
                   party = v;
                   if (v.isNotEmpty) _autoFillParty(v);
                 })),
-          SizedBox(width: half, child: _dd(widget.t == 'TR' ? 'From Warehouse' : (pr || po) ? 'Deliver To Warehouse' : 'Warehouse', wh, whOpts, (v) => wh = v, req: true)),
+          SizedBox(width: half, child: _dd(widget.t == 'TR' ? 'From Warehouse' : (pr || po) ? 'Deliver To Warehouse' : 'Warehouse', wh, whOpts, (v) => wh = v, req: !pr)),
           if (widget.t == 'TR') SizedBox(width: half, child: _dd('To Warehouse', to, whOpts, (v) => to = v, req: true)),
           if (pt == 'C') SizedBox(width: half, child: _dd('Sales Person', salesPerson, S.salesPersons.where((x) => x.status != 'Inactive' || x.name == salesPerson).map((sp) => Opt(sp.name, sp.name)).toList(), (v) => salesPerson = v, req: true)),
-          if (so || qt || po || pr) SizedBox(width: half, child: _dd('Currency', currency, opts(S.currencyCodes), (v) => setState(() => _setCurrency(v)), req: true)),
+          if (so || qt || po || pr) SizedBox(width: half, child: _dd('Currency', currency, opts(S.currencyCodes), (v) => setState(() => _setCurrency(v)), req: !pr)),
           // only a foreign currency needs an exchange rate (₹ per 1 unit; rates stay in that currency, the ₹ value follows).
           // INR needs none, so no greyed-out field is shown.
           if ((so || qt || po || pr) && currency != 'INR')
             SizedBox(width: half, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _label('Exchange Rate (₹ per 1 $currency)', req: true),
+              _label('Exchange Rate (₹ per 1 $currency)', req: !pr),
               TextField(
                 controller: exRateCtl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -2475,10 +2495,10 @@ class _DocFormState extends State<DocForm> {
                   for (final u in staffUsers) Opt(u.name, '${u.name} — ${roleOfName(u.name)}'),
                   // older requests raised by someone who is not a user keep their name
                   if (_xs['req_by_person'] != null && !staffUsers.any((u) => u.name == _xs['req_by_person'])) Opt(_xs['req_by_person']!, _xs['req_by_person']!),
-                ], (v) => _xs['req_by_person'] = v, req: true)),
-            SizedBox(width: half, child: _sel('Department', 'dept', ['Stores', 'Production', 'Maintenance', 'Admin', 'Sales'], req: true)),
-            SizedBox(width: half, child: _date('Required By Date', _c('req_by', addDays(todayStr(), 7)), req: true)),
-            if (_opt) SizedBox(width: half, child: _dd('Branch', branch, branchOpts, (v) => branch = v, req: true)),
+                ], (v) => _xs['req_by_person'] = v)),
+            SizedBox(width: half, child: _sel('Department', 'dept', ['Stores', 'Production', 'Maintenance', 'Admin', 'Sales'])),
+            SizedBox(width: half, child: _date('Required By Date', _c('req_by', addDays(todayStr(), 7)))),
+            if (_opt) SizedBox(width: half, child: _dd('Branch', branch, branchOpts, (v) => branch = v)),
             if (_opt) SizedBox(width: half, child: _sel('Priority', 'priority', ['Normal', 'Urgent', 'Low'])),
           ],
           if (po) ...[
@@ -2636,7 +2656,7 @@ class _DocFormState extends State<DocForm> {
             dataRowMaxHeight: 80, // room for a two-line description
             columns: [
               for (final h in [
-                'Item', 'Description', 'HSN / SAC', 'Qty', 'UOM', if (!noPrice) ...['Rate ($_sym)', 'Tax Code'],
+                'Item', if (pr) 'Supplier', 'Description', 'HSN / SAC', 'Qty', 'UOM', if (!noPrice) ...['Rate ($_sym)', 'Tax Code'],
                 if (_opt && !noPrice) 'Disc %',
                 // the star only when a line holds a batch- or serial-tracked item
                 if (tr || adj) 'Batch / Serial No.${lines.any((l) => l.item.isNotEmpty && S.items.any((p) => p.id == l.item && p.track != 'None')) ? ' *' : ''}',
@@ -2665,9 +2685,25 @@ class _DocFormState extends State<DocForm> {
                         lines[i].uom = itemObj.uom;
                         lines[i].rateCtl.text = _rateText((widget.t.startsWith('P') || const ['GRN', 'ADJ', 'TR'].contains(widget.t) ? itemObj.cost : itemObj.price) / _fx);
                         lines[i].taxCode = S.taxNameFor(itemObj.gst);
+                        // a request line starts with the item's usual supplier (it can be changed)
+                        if (pr && lines[i].sup.isEmpty && S.suppliers.any((x) => x.id == itemObj.sup && x.status != 'Inactive')) {
+                          lines[i].sup = itemObj.sup;
+                          lines[i].rateCtl.text = _rateText(S.purchasePrice(itemObj.sup, v, lines[i].qty < 1 ? 1 : lines[i].qty.toInt()).rate / _fx);
+                        }
                       }),
                     ),
                   )),
+                  if (pr)
+                    DataCell(SizedBox(
+                        width: 170,
+                        child: ProtoSelect(
+                            placeholder: 'Select supplier',
+                            value: lines[i].sup,
+                            options: [
+                              const SelOpt('', '— Not decided —'),
+                              for (final x in S.suppliers.where((x) => x.status != 'Inactive' || x.id == lines[i].sup)) SelOpt(x.id, x.name),
+                            ],
+                            onChanged: (v) => setState(() => lines[i].sup = v)))),
                   // wraps onto a second line so a long description is never cut off
                   DataCell(SizedBox(width: 170, child: TextField(controller: lines[i].descCtl, minLines: 1, maxLines: 2, style: const TextStyle(fontSize: 12.5), decoration: const InputDecoration(hintText: 'What is needed', isDense: true)))),
                   DataCell(SizedBox(width: 90, child: TextField(controller: lines[i].hsnCtl, style: const TextStyle(fontSize: 12.5), decoration: const InputDecoration(hintText: 'Code')))),
@@ -2794,7 +2830,7 @@ class _DocFormState extends State<DocForm> {
         if (pr) ...[
           const SectionTitle('Justification'),
           Wrap(spacing: 14, runSpacing: 14, children: [
-            SizedBox(width: c.maxWidth, child: _text('Business Justification', _c('purpose'), req: true, maxLines: 3, hint: 'Why is this purchase needed?')),
+            SizedBox(width: c.maxWidth, child: _text('Business Justification', _c('purpose'), maxLines: 3, hint: 'Why is this purchase needed?')),
             if (_opt) SizedBox(width: half, child: ValueListenableBuilder<int>(valueListenable: _calc, builder: (_, __, ___) => _readOnly('Estimated Amount', _m(_totals().grandTotal)))),
           ]),
         ],

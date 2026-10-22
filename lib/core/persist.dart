@@ -25,8 +25,8 @@ class PersistExtra {
 final List<PersistExtra> persistExtras = [];
 
 // ---------------------------------------------------------------- records
-_J _line(Line l) => {'item': l.item, 'qty': l.qty, 'rate': l.rate, 'recv': l.recv, 'desc': l.desc, 'bin': l.bin, 'batch': l.batch, 'from': l.from, 'sys': l.sys, 'cnt': l.cnt, 'acc': l.acc};
-Line _unLine(_J j) => Line(j['item'], j['qty'], _pd(j['rate']), recv: j['recv'] ?? 0, bin: j['bin'] ?? '', batch: j['batch'] ?? '', from: j['from'] ?? '', sys: j['sys'], cnt: j['cnt'], acc: j['acc'] ?? 0)..desc = j['desc'];
+_J _line(Line l) => {'item': l.item, 'qty': l.qty, 'rate': l.rate, 'recv': l.recv, 'desc': l.desc, 'bin': l.bin, 'batch': l.batch, 'from': l.from, 'sys': l.sys, 'cnt': l.cnt, 'acc': l.acc, 'sup': l.sup};
+Line _unLine(_J j) => Line(j['item'], j['qty'], _pd(j['rate']), recv: j['recv'] ?? 0, bin: j['bin'] ?? '', batch: j['batch'] ?? '', from: j['from'] ?? '', sys: j['sys'], cnt: j['cnt'], acc: j['acc'] ?? 0, sup: j['sup'] ?? '')..desc = j['desc'];
 
 /// The optional text fields of a document: name → (read, write).
 final Map<String, (String? Function(Doc), void Function(Doc, String?))> _docText = {

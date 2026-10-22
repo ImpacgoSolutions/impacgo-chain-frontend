@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../core/format.dart';
 import '../core/models.dart';
+import '../core/store.dart' show ScmActions;
 import '../ui/tokens.dart';
 import '../ui/widgets.dart';
 
@@ -68,6 +69,8 @@ class DocReport extends StatelessWidget {
         ('GSTIN', sup.gstin),
         ('Address', '${sup.city}, ${sup.state}'),
       ],
+      // a request with items from several suppliers
+      if (sup == null && t == 'PR' && S.prSupplierNames(d).isNotEmpty) ('Suppliers', S.prSupplierNames(d)),
       if (cust != null) ...[
         ('Bill to', cust.name),
         ('GSTIN', cust.gstin),

@@ -84,11 +84,13 @@ class Line {
   /// What the line is, as typed on the form (defaults to the item name).
   String? desc;
   String bin, batch, from;
+  /// Purchase request: the supplier this line is bought from (each line can have its own; '' = not chosen).
+  String sup;
   int? sys, cnt;
   int acc;
-  Line(this.item, this.qty, this.rate, {this.recv = 0, this.bin = '', this.batch = '', this.from = '', this.sys, this.cnt, this.acc = 0});
+  Line(this.item, this.qty, this.rate, {this.recv = 0, this.bin = '', this.batch = '', this.from = '', this.sys, this.cnt, this.acc = 0, this.sup = ''});
   // the batch / serial numbers and the bin go with the line from pick list to packing slip to delivery note
-  Line copy() => Line(item, qty, rate, bin: bin, batch: batch, from: from)..desc = desc;
+  Line copy() => Line(item, qty, rate, bin: bin, batch: batch, from: from, sup: sup)..desc = desc;
 }
 
 class LogEntry {

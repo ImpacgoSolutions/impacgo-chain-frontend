@@ -405,7 +405,7 @@ extension ScmActions on AppStore {
 
   Doc autoPR(String w, String itemId, int qty, String src) {
     final p = item(itemId);
-    return mk(Doc(id: '', type: 'PR', date: todayStr(), wh: w, status: 'Pending Approval', party: p.sup, by: Users.sys, lines: [Line(itemId, qty, purchasePrice(p.sup, itemId, qty).rate)])
+    return mk(Doc(id: '', type: 'PR', date: todayStr(), wh: w, status: 'Pending Approval', party: p.sup, by: Users.sys, lines: [Line(itemId, qty, purchasePrice(p.sup, itemId, qty).rate, sup: p.sup)])
       ..source = src
       ..need = addDays(todayStr(), p.lead));
   }
@@ -468,28 +468,71 @@ extension ScmActions on AppStore {
     return po;
   }
 
+  /// The supplier a request line is bought from: the line's own supplier, else the request's, else the item's usual supplier.
+  String lineSup(Doc pr, Line l) => l.sup.isNotEmpty ? l.sup : (pr.party ?? (items.any((p) => p.id == l.item) ? item(l.item).sup : ''));
+
+  /// The suppliers named on a request's lines, e.g. "Andhra Corrugators, Sri Balaji Papers" ('' when none is chosen).
+  String prSupplierNames(Doc pr) => {for (final l in pr.lines) lineSup(pr, l)}.where((x) => x.isNotEmpty && suppliers.any((s) => s.id == x)).map((x) => sup(x).name).join(', ');
+
+  /// The request's lines by supplier, in the order the suppliers first appear (each supplier gets its own purchase order).
+  Map<String, List<Line>> prBySupplier(Doc pr) {
+    final m = <String, List<Line>>{};
+    for (final l in pr.lines) {
+      m.putIfAbsent(lineSup(pr, l), () => []).add(l);
+    }
+    return m;
+  }
+
+  /// Suppliers of this request that have no purchase order yet.
+  List<String> prSuppliersToOrder(Doc pr) {
+    // a purchase order covers the supplier group it was made for, even if the supplier was changed on its form
+    final done = docsOf('PO').where((p) => p.ref == pr.id && p.status != 'Cancelled' && p.status != 'Rejected').map((p) => p.extra['pr_sup'] ?? p.party).toSet();
+    return prBySupplier(pr).keys.where((s) => !done.contains(s)).toList();
+  }
+
+  /// Every supplier ordered: the request is Ordered; otherwise it stays Approved for the remaining suppliers.
+  void _prAfterOrder(Doc pr, String poId) {
+    final left = prSuppliersToOrder(pr);
+    if (left.isEmpty) {
+      setStatus(pr, 'Ordered', Users.buyer, poId);
+    } else {
+      logDoc(pr, '$poId created · still to order from ${left.map((x) => x.isEmpty ? 'a supplier not chosen yet' : sup(x).name).join(', ')}', Users.buyer);
+    }
+  }
+
+  /// Makes the purchase orders for an approved request at once: one per supplier still to order.
   Res prPo(String id) {
     final d = doc(id)!;
     if (d.status != 'Approved') return Res('${d.id} is ${d.status}: only an approved request can be made into a purchase order');
-    final supId = d.party ?? (suppliers.isNotEmpty ? suppliers.first.id : 'S001');
-    final po = createPO(supId, d.wh, d.lines.map((l) => (Line(l.item, l.qty, purchasePrice(supId, l.item, l.qty).rate)..desc = l.desc)).toList(), d.id);
-    setStatus(po, 'Sent to Supplier', Users.buyer, 'from approved request $id · sent to supplier');
-    setStatus(d, 'Ordered', Users.buyer, po.id);
-    link(d, po);
-    return Res('Purchase order ${po.id} created from $id · Sent to Supplier', po.id);
+    final groups = prBySupplier(d);
+    final made = <Doc>[];
+    for (final s in prSuppliersToOrder(d)) {
+      final supId = s.isNotEmpty ? s : (suppliers.isNotEmpty ? suppliers.first.id : 'S001');
+      final po = createPO(supId, d.wh, groups[s]!.map((l) => (Line(l.item, l.qty, l.rate > 0 ? l.rate : purchasePrice(supId, l.item, l.qty).rate)..desc = l.desc)).toList(), d.id);
+      po.extra = {...po.extra, 'pr_sup': s};
+      setStatus(po, 'Sent to Supplier', Users.buyer, 'from approved request $id · sent to supplier');
+      link(d, po);
+      made.add(po);
+    }
+    if (made.isEmpty) return Res('${d.id}: every supplier has a purchase order already');
+    setStatus(d, 'Ordered', Users.buyer, made.map((p) => p.id).join(', '));
+    return Res(made.length == 1 ? 'Purchase order ${made.first.id} created from $id · Sent to Supplier' : '${made.length} purchase orders created from $id (one per supplier): ${made.map((p) => p.id).join(', ')}', made.first.id);
   }
 
   /// A purchase order was created (and possibly changed) on the form opened from this request.
-  Res prOrdered(String prId, String poId) {
+  /// [forSup] is the request's supplier group this order was made for.
+  Res prOrdered(String prId, String poId, {String? forSup}) {
     final pr = doc(prId)!, po = doc(poId)!;
     po.ref = prId;
+    if (forSup != null) po.extra = {...po.extra, 'pr_sup': forSup};
     logDoc(po, 'Created from $prId', Users.buyer);
-    setStatus(pr, 'Ordered', Users.buyer, poId);
     link(pr, po);
     // Since PR was approved by SCM Manager, the PO is sent to supplier
     setStatus(po, 'Sent to Supplier', Users.buyer, 'from approved request $prId · sent to supplier');
     sendEmail(emailOfSup(po.party!), 'Purchase order ${po.id}', po.id);
-    return Res('Purchase order $poId created from $prId · Sent to Supplier', poId);
+    _prAfterOrder(pr, poId);
+    final left = prSuppliersToOrder(pr).length;
+    return Res('Purchase order $poId created from $prId · Sent to Supplier${left > 0 ? ' · $left more supplier(s) to order on this request' : ''}', poId);
   }
 
   Res prRfq(String id) {
@@ -1070,6 +1113,12 @@ extension ScmActions on AppStore {
       case 'SO':
         return createSO(party!, w, lines, null);
       case 'PR':
+        // a supplier given for the whole request goes on every line (each line can have its own)
+        if (party != null) {
+          for (final l in lines) {
+            l.sup = party;
+          }
+        }
         return mk(Doc(id: '', type: 'PR', date: todayStr(), wh: w, status: 'Draft', party: party, by: Users.mgr, lines: lines)
           ..source = 'Manual — Srinivas Rao'
           ..need = addDays(todayStr(), 7));

@@ -1266,8 +1266,13 @@ Future<Uint8List> buildPurchaseRequestPdf(Doc d) => _cleanPdf(
       title: 'PURCHASE REQUEST',
       id: d.id,
       status: d.status,
-      left: [('Request No.', d.id), ('Request Date', _dmy(d.date)), ('Requested By', d.requester ?? (d.source ?? '').split('— ').last), ('Department', d.dept ?? 'Stores')],
-      right: [('Required By', d.need == null ? '-' : _dmy(d.need!)), ('Supplier', _supName(d)), ('Supplier GSTIN', _supGstin(d)), ('Deliver To', _deliverTo(d))],
+      left: [('Request No.', d.id), ('Request Date', _dmy(d.date)), ('Requested By', d.requester ?? (d.source ?? '').split('— ').last), ('Department', d.dept ?? '-')],
+      right: [
+        ('Required By', d.need == null ? '-' : _dmy(d.need!)),
+        // lines from several suppliers: all of them are named (no single GSTIN)
+        if (d.party == null) ('Suppliers', S.prSupplierNames(d).isEmpty ? '-' : S.prSupplierNames(d)) else ...[('Supplier', _supName(d)), ('Supplier GSTIN', _supGstin(d))],
+        ('Deliver To', _deliverTo(d)),
+      ],
       heads: ['#', 'Item / Description', 'HSN / SAC', 'Qty', 'Est. Rate', 'GST', 'Amount'],
       widths: _pricedWidths,
       rightCols: {3, 4, 5, 6},

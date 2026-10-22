@@ -76,7 +76,25 @@ void downloadBuyDoc(Doc d) {
 // ---------------------------------------------------------------- PR → PO
 /// Opens the full purchase order form filled in from the approved request, so it can be
 /// checked and changed. Nothing is saved until Create purchase order is pressed.
-void openPoFromPr(Doc pr) => openFormPage('New Purchase Order · from ${pr.id}', DocForm('PO', party: pr.party, fromId: pr.id));
+/// A request whose lines have different suppliers becomes one purchase order per supplier: pick the supplier to order from next.
+void openPoFromPr(Doc pr) {
+  final left = S.prSuppliersToOrder(pr);
+  void open(String sup) => openFormPage('New Purchase Order · from ${pr.id}${sup.isEmpty ? '' : ' · ${S.sup(sup).name}'}', DocForm('PO', party: sup.isEmpty ? null : sup, fromId: pr.id, fromSup: sup));
+  if (left.length <= 1) {
+    open(left.isEmpty ? (pr.party ?? '') : left.first);
+    return;
+  }
+  final groups = S.prBySupplier(pr);
+  mform('Purchase order from ${pr.id}', [
+    F('sup', 'Supplier to order from', type: 'select', req: true, full: true, def: left.first, options: [
+      for (final x in left) Opt(x, '${x.isEmpty ? 'Supplier not chosen yet' : S.sup(x).name} · ${groups[x]!.length} line(s)'),
+    ]),
+  ], (v, ctx) {
+    Navigator.of(ctx).pop();
+    open(v['sup'] as String);
+    return false;
+  }, btn: 'Continue', icon: 'swap', intro: 'This request has items from ${left.length} suppliers, so each supplier gets its own purchase order. Pick the supplier to order from now; the request stays Approved until every supplier is ordered.');
+}
 
 // ---------------------------------------------------------------- 3-way match
 /// Purchase order, goods receipt and supplier invoice side by side, line by line, so

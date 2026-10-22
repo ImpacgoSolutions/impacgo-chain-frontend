@@ -428,6 +428,11 @@ class AppStore extends ChangeNotifier {
   String partyName(Doc d) {
     final p = dt[d.type]!.party;
     if (p == 'C') return d.party == null ? '—' : cust(d.party!).name;
+    if (p == 'S' && d.party == null && d.type == 'PR') {
+      // a request whose lines have different suppliers names them all
+      final names = prSupplierNames(d);
+      return names.isEmpty ? '—' : names;
+    }
     if (p == 'S') return d.party == null ? '—' : sup(d.party!).name;
     return wh(d.wh).name;
   }
