@@ -444,9 +444,6 @@ class TopBar extends StatelessWidget {
           IconBtn('bell', openNotifications, dot: true, tip: 'Notifications'),
           const SizedBox(width: 10),
         ],
-        // start over: reloads the app so it opens fresh on the SCM Workspace (like F5)
-        IconBtn('refresh', S.restartApp, tip: 'Restart — reload the app and start fresh'),
-        const SizedBox(width: 10),
         InkWell(
           onTap: openProfile,
           borderRadius: BorderRadius.circular(10),
