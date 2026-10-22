@@ -53,7 +53,8 @@ String _worksAt(AppUser u) {
 
 Set<String> _screensOf(AppUser u) => u.screens ?? roleScreens(u.role);
 
-void openUserForm([AppUser? u]) => openFormPage(u == null ? 'New user' : 'Edit user · ${u.name}', UserForm(u), subtitle: 'Fill in the mandatory fields (*) and choose the screens');
+void openUserForm([AppUser? u]) => openFormPage(u == null ? 'New user' : 'Edit user · ${u.name}', UserForm(u),
+    subtitle: 'Who the person is, their role and the screens they can open', maxWidth: 760, fill: false);
 
 class UserForm extends StatefulWidget {
   final AppUser? user;
@@ -176,69 +177,71 @@ class _UserFormState extends State<UserForm> {
         ProtoSelect(value: value, options: options, placeholder: placeholder, onChanged: onChanged),
       ]);
 
-  Widget _screensBox(double width) {
+  /// A screen as a small pill: tap to switch it on or off.
+  Widget _pill(String id, String label) {
+    final on = _screens.contains(id);
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => setState(() => on ? _screens.remove(id) : _screens.add(id)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: on ? C.blue50 : C.card,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: on ? C.blue600 : C.border),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (on) ...[const Icon(Icons.check, size: 14, color: C.blue600), const SizedBox(width: 5)],
+          // a long name wraps inside the pill on a narrow phone
+          Flexible(child: Text(label, style: TextStyle(fontSize: 12.5, fontWeight: on ? FontWeight.w600 : FontWeight.w400, color: on ? C.blue600 : C.soft))),
+        ]),
+      ),
+    );
+  }
+
+  Widget _screensBox() {
     if (_role == 'admin') {
-      return const NoteBox(Tone.blue, 'lock', 'The SCM Manager (Admin) sees every screen.', 'Including Users & Roles and Company Settings, which only the Admin can open.');
+      return const Text('The SCM Manager sees every screen.', style: TextStyle(fontSize: 12.5, color: C.faint));
     }
     final all = [for (final g in _groups) ...g.$2.map((x) => x.$1)];
-    final per = width >= 700 ? 3 : (width >= 440 ? 2 : 1);
-    final cell = (width - 34 - 12 * (per - 1)) / per; // inside the box's padding and border
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Row(children: [
-        Expanded(child: Text('${_screens.where(all.contains).length} of ${all.length} screens ticked · this person\'s sidebar shows exactly these', style: const TextStyle(fontSize: 12, color: C.faint))),
-        Btn.ghost('Standard for the role', small: true, onTap: () => setState(() => _screens = roleScreens(_role))),
-      ]),
-      const SizedBox(height: 8),
-      for (final g in _groups)
-        Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-          decoration: BoxDecoration(border: Border.all(color: C.border), borderRadius: BorderRadius.circular(R.sm)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              Expanded(child: Text(g.$1.toUpperCase(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.soft, letterSpacing: .5))),
-              () {
-                final ids = g.$2.map((x) => x.$1).toSet();
-                final allOn = ids.every(_screens.contains);
-                return Btn.ghost(allOn ? 'Clear' : 'Select all', small: true, onTap: () => setState(() => allOn ? _screens.removeAll(ids) : _screens.addAll(ids)));
-              }(),
-            ]),
-            Wrap(spacing: 12, runSpacing: 2, children: [
-              for (final (id, label) in g.$2)
-                SizedBox(
-                  width: cell,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(6),
-                    onTap: () => setState(() => _screens.contains(id) ? _screens.remove(id) : _screens.add(id)),
-                    child: Row(children: [
-                      SizedBox(width: 32, height: 32, child: Checkbox(value: _screens.contains(id), onChanged: (v) => setState(() => v == true ? _screens.add(id) : _screens.remove(id)))),
-                      const SizedBox(width: 4),
-                      Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
-                    ]),
-                  ),
-                ),
-            ]),
-          ]),
+      for (final g in _groups) ...[
+        Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 8),
+          child: Text(g.$1, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: C.faint)),
         ),
+        Wrap(spacing: 8, runSpacing: 8, children: [for (final (id, label) in g.$2) _pill(id, label)]),
+        const SizedBox(height: 8),
+      ],
+      const SizedBox(height: 4),
+      // side by side, or one under the other on a narrow phone
+      Wrap(alignment: WrapAlignment.spaceBetween, spacing: 12, runSpacing: 6, children: [
+        Text('${_screens.where(all.contains).length} of ${all.length} screens', style: const TextStyle(fontSize: 12, color: C.faint)),
+        InkWell(
+          onTap: () => setState(() => _screens = roleScreens(_role)),
+          child: const Text('Reset to the role\'s screens', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: C.blue600)),
+        ),
+      ]),
     ]);
   }
+
+  Widget _heading(String t) => Padding(
+        padding: const EdgeInsets.only(top: 22, bottom: 12),
+        child: Text(t, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+      );
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (ctx, c) {
-      final two = c.maxWidth >= 560;
+      final two = c.maxWidth >= 520;
       final half = two ? (c.maxWidth - 14) / 2 : c.maxWidth;
       final p = _tried ? _problem() : null;
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const SectionTitle('Account', first: true),
         Wrap(spacing: 14, runSpacing: 14, children: [
           SizedBox(width: half, child: _field('Full Name', _name, req: true, hint: 'e.g. Ravi Teja')),
           SizedBox(width: half, child: _field('Email', _email, req: true, hint: 'name@impacgo.com', type: TextInputType.emailAddress)),
           SizedBox(width: half, child: _field('Mobile No.', _phone, hint: '+91 98480 12345', type: TextInputType.phone)),
-          SizedBox(width: half, child: _field(_editing ? 'New Password' : 'Password', _pass, req: !_editing, secret: true, hint: _editing ? 'Leave empty to keep the current one' : 'At least 6 characters')),
-        ]),
-        const SectionTitle('Role'),
-        Wrap(spacing: 14, runSpacing: 14, children: [
+          SizedBox(width: half, child: _field(_editing ? 'New Password' : 'Password', _pass, req: !_editing, secret: true, hint: _editing ? 'Leave empty to keep it' : 'At least 6 characters')),
           SizedBox(
             width: half,
             child: _select('Role', _role, [for (final e in roleNames.entries) SelOpt(e.key, e.value)], _setRole, req: true),
@@ -257,14 +260,14 @@ class _UserFormState extends State<UserForm> {
           if (_editing)
             SizedBox(
               width: half,
-              child: _select('Status', _active ? 'Active' : 'Inactive', const [SelOpt('Active', 'Active · can sign in'), SelOpt('Inactive', 'Inactive · cannot sign in')], (v) => setState(() => _active = v == 'Active')),
+              child: _select('Status', _active ? 'Active' : 'Inactive', const [SelOpt('Active', 'Active'), SelOpt('Inactive', 'Inactive · cannot sign in')], (v) => setState(() => _active = v == 'Active')),
             ),
-          SizedBox(width: c.maxWidth, child: Text(roleHints[_role] ?? '', style: const TextStyle(fontSize: 12, color: C.faint))),
         ]),
-        const SectionTitle('Screens'),
-        _screensBox(c.maxWidth),
-        if (p != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(p, style: const TextStyle(fontSize: 12.5, color: C.red))),
-        const SizedBox(height: 16),
+        Padding(padding: const EdgeInsets.only(top: 8), child: Text(roleHints[_role] ?? '', style: const TextStyle(fontSize: 12, color: C.faint))),
+        _heading('Screens'),
+        _screensBox(),
+        if (p != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(p, style: const TextStyle(fontSize: 12.5, color: C.red))),
+        const SizedBox(height: 22),
         Wrap(alignment: WrapAlignment.end, spacing: 10, runSpacing: 8, children: [
           Btn.secondary('Cancel', onTap: () => Navigator.of(context).pop()),
           Btn(_editing ? 'Save changes' : 'Create user', icon: _editing ? null : 'check', onTap: _save),

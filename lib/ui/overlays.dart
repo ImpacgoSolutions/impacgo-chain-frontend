@@ -89,7 +89,8 @@ Future<void> openModal(String title, Widget body, {List<Widget> Function(BuildCo
 /// a back arrow and title, the form centred in an aligned two-column card, and
 /// a fixed action bar at the bottom. Closing works exactly like a dialog
 /// (Navigator.pop / closeAll), so every existing Save and Cancel still works.
-Future<void> openFormPage(String title, Widget body, {List<Widget> Function(BuildContext ctx)? actions, List<Widget> headerActions = const [], String? subtitle}) async {
+/// [maxWidth] / [fill]: a small form (e.g. a new user) can use a narrower card that is only as tall as its content.
+Future<void> openFormPage(String title, Widget body, {List<Widget> Function(BuildContext ctx)? actions, List<Widget> headerActions = const [], String? subtitle, double maxWidth = 1180, bool fill = true}) async {
   await navKey.currentState!.push(PageRouteBuilder<void>(
     // instant: a fade shows the page underneath and looks like a blink
     transitionDuration: Duration.zero,
@@ -127,7 +128,7 @@ Future<void> openFormPage(String title, Widget body, {List<Widget> Function(Buil
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 1180, minHeight: math.max(0, box.maxHeight - 44)),
+                        constraints: BoxConstraints(maxWidth: maxWidth, minHeight: fill ? math.max(0, box.maxHeight - 44) : 0),
                         child: Container(
                           padding: EdgeInsets.all(mobile ? 16 : 26),
                           decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(12), border: Border.all(color: C.border)),
@@ -146,7 +147,7 @@ Future<void> openFormPage(String title, Widget body, {List<Widget> Function(Buil
                 child: Align(
                   alignment: Alignment.center,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1180),
+                    constraints: BoxConstraints(maxWidth: maxWidth),
                     child: Wrap(alignment: WrapAlignment.end, spacing: 10, runSpacing: 8, children: barActions),
                   ),
                 ),
