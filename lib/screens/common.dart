@@ -631,6 +631,7 @@ List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
           S.go('customers');
           openCustomerPanel(d.party!);
         });
+        dan('Reject', 'x', () => withReason('Reject order', 'Reject order', ['Credit risk', 'Overdue not cleared', 'Customer to pay in advance', 'Other']));
         pri('Release credit hold', 'unlock', () => run(() => S.soReleaseHold(id)));
       }
       if (s == 'Confirmed') pri('Release to warehouse', 'checksq', () => run(() => S.soRelease(id)));
@@ -736,11 +737,14 @@ List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
     case 'PI':
       if (supplierInvoiceSent(d)) sec('Download purchase invoice', 'download', () => downloadSupplierInvoice(d));
       // the system checks the invoice by itself: no Verify / Reject buttons, only the manager's approval of a difference
-      if (s == 'Pending Approval') pri('Approve difference', 'check', () => run(() => S.piApprove(id)));
+      if (s == 'Pending Approval') {
+        dan('Reject', 'x', () => withReason('Reject supplier invoice', 'Reject invoice', ['Price above the order', 'Quantity more than received', 'Duplicate invoice', 'Wrong GST', 'Other']));
+        pri('Approve difference', 'check', () => run(() => S.piApprove(id)));
+      }
       break;
     case 'PRT':
       if (s == 'Submitted') {
-        dan('Reject', 'x', () => run(() => S.reject(id)));
+        dan('Reject', 'x', () => withReason('Reject purchase return', 'Reject return', ['Goods to be kept', 'Supplier will replace on site', 'Wrong quantity on the return', 'Other']));
         pri('Approve return', 'check', () => run(() => S.prtApprove(id)));
       }
       if (s == 'Approved' || s == 'Requested') pri('Dispatch items', 'truck', () => run(() => S.prtDispatch(id)));
@@ -772,7 +776,7 @@ List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
       break;
     case 'ADJ':
       if (s == 'Pending Approval') {
-        dan('Reject', 'x', () => run(() => S.reject(id)));
+        dan('Reject', 'x', () => withReason('Reject adjustment', 'Reject adjustment', ['Recount needed', 'Value not justified', 'Wrong item or quantity', 'Other']));
         pri('Approve & post', 'check', () => run(() => S.adjApprove(id)));
       }
       break;

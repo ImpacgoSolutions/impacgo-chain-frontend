@@ -1203,6 +1203,7 @@ extension ScmActions on AppStore {
     final d = doc(id)!;
     final t = d.type;
     final wasReserved = t == 'SO' && d.reserved;
+    final before = d.amount;
     if (wasReserved) reserveSO(d, false); // release the old quantities first
     d.party = party == null ? d.party : (party.isEmpty ? null : party);
     d.wh = w;
@@ -1224,8 +1225,14 @@ extension ScmActions on AppStore {
       return Line(r.item, r.qty, rate, batch: batchNos != null && idx < batchNos.length ? batchNos[idx] : '');
     }).toList();
     d.amount = calc(d).total;
-    if (wasReserved) reserveSO(d, true);
     logDoc(d, 'Edited · ${d.lines.length} line(s) · ${fmtINR(d.amount)}', Users.mgr, 'edit');
+    if (t == 'SO' && d.status == 'Confirmed' && d.amount > before + .5) {
+      // more value than was checked and approved: the credit check and approval limit run again
+      logDoc(d, 'Value raised from ${fmtINR(before)} to ${fmtINR(d.amount)} · checks run again', Users.sys, 'alert');
+      evaluateSO(d);
+      return Res('${d.id} updated · ${d.status == 'Confirmed' ? 'checks passed' : 'now ${d.status}'}', id);
+    }
+    if (wasReserved) reserveSO(d, true);
     return Res('${d.id} updated', id);
   }
 
@@ -1339,24 +1346,21 @@ extension ScmActions on AppStore {
       }
       switch (d.type) {
         case 'SO':
-          d.note = null;
-          confirmSO(d, Users.mgr);
-          break;
+          soApprove(d.id);
         case 'PO':
-          d.note = null;
-          setStatus(d, 'Sent to Supplier', Users.mgr, 'bulk approved');
-          break;
+          poApprove(d.id);
         case 'PR':
-          setStatus(d, 'Approved', Users.mgr, 'bulk approved');
-          break;
+          prApprove(d.id);
         case 'ADJ':
-          postAdj(d);
-          setStatus(d, 'Posted', Users.mgr, 'bulk approved');
-          break;
+          adjApprove(d.id);
         case 'PI':
-          d.due = addDays(todayStr(), sup(d.party!).terms);
-          setStatus(d, 'Approved', Users.mgr, 'bulk approved');
-          break;
+          piApprove(d.id);
+        case 'QT':
+          qtApprove(d.id);
+        case 'SR':
+          srApprove(d.id);
+        case 'TR':
+          trApprove(d.id);
         default:
           skip.add(d.id);
           continue;

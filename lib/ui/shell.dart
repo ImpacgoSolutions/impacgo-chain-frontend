@@ -552,6 +552,24 @@ List<Alert> alertsList() {
   for (final d in S.docsOf('SO').where((d) => d.status == 'On Hold')) {
     a.add(Alert('lock', Tone.red, '${d.id} on credit hold', d.hold ?? '', doc: d.id));
   }
+  // everything else waiting for the SCM Manager's approval (sales orders are above; supplier invoices below)
+  if (S.isManager) {
+    for (final (t, why) in const [
+      ('PR', 'purchase request'),
+      ('PO', 'purchase order'),
+      ('QT', 'quotation discount'),
+      ('SR', 'sales return'),
+      ('TR', 'stock transfer'),
+      ('ADJ', 'stock adjustment'),
+    ]) {
+      for (final d in S.docsOf(t).where((d) => d.status == 'Pending Approval')) {
+        a.add(Alert('check', Tone.amber, '${d.id} awaits your approval', '${why[0].toUpperCase()}${why.substring(1)} · ${S.partyName(d)} · ${fmtINR(d.amount)}', doc: d.id));
+      }
+    }
+    for (final d in S.docsOf('PRT').where((d) => d.status == 'Submitted')) {
+      a.add(Alert('check', Tone.amber, '${d.id} awaits your approval', 'Purchase return · ${S.partyName(d)} · ${d.reason ?? ''}', doc: d.id));
+    }
+  }
   for (final p in S.items) {
     for (final w in S.warehouses) {
       if (S.avail(w.id, p.id) < p.reorder) {

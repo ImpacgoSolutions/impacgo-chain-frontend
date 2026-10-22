@@ -313,7 +313,12 @@ class _NextSteps extends StatelessWidget {
       case 'PI':
         // the system checks every invoice against the purchase order and goods receipt by itself (no Verify / Reject buttons)
         if (s == 'Awaiting Goods Receipt') info = 'Waiting for the goods receipt and QC. The invoice is checked automatically as soon as the QC result is posted.';
-        if (s == 'Pending Approval') steps.add(Btn('Approve difference', icon: 'check', onTap: () => _run(S.piApprove(id))));
+        if (s == 'Pending Approval') {
+          steps.addAll([
+            Btn.danger('Reject', icon: 'x', onTap: () => _rejectWithReason(d, ['Price above the order', 'Quantity more than received', 'Duplicate invoice', 'Wrong GST', 'Other'])),
+            Btn('Approve difference', icon: 'check', onTap: () => _run(S.piApprove(id))),
+          ]);
+        }
         break;
       case 'INV':
         if (s != 'Paid' && S.canAct('INV', 'Record payment')) steps.add(Btn('Record payment', icon: 'wallet', onTap: () => dlgPay(d)));

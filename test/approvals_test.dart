@@ -108,6 +108,34 @@ void main() {
     asManager();
   });
 
+  test('a confirmed sales order raised above the limit goes back for approval', () {
+    asManager();
+    final c = S.customers.first.id, it = S.items.first.id, w = S.warehouses.first.id;
+    S.customers.first.limit = 1e9; // keep the credit check out of the way
+    final so = S.saveDocForm('SO', c, w, null, null, [(item: it, qty: 1)]);
+    expect(so.status, 'Confirmed');
+    final rate = so.lines.first.rate;
+    final big = (S.params.soApproval / rate).ceil() + 1;
+    S.updateDocForm(so.id, c, w, null, null, [(item: it, qty: big)], rates: [rate]);
+    expect(so.status, 'Pending Approval');
+    expect(so.reserved, isFalse, reason: 'stock is reserved again only once approved');
+    S.soApprove(so.id);
+    expect(so.status, 'Confirmed');
+  });
+
+  test('a supplier invoice with a difference can be rejected; the supplier can then send a new one', () {
+    asManager();
+    final pi = S.docsOf('PI').first;
+    pi.status = 'Pending Approval';
+    expect(S.canAct('PI', 'Reject'), isTrue);
+    S.reject(pi.id, 'Price above the order');
+    expect(pi.status, 'Rejected');
+    asExec();
+    expect(S.canAct('PI', 'Reject'), isFalse);
+    expect(S.canAct('PI', 'Approve difference'), isFalse);
+    asManager();
+  });
+
   testWidgets('nothing breaks for the manager (who sees every button)', (tester) async {
     asManager();
     for (final d in S.docs.take(60)) {
