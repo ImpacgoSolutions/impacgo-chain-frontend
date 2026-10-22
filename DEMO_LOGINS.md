@@ -1,6 +1,6 @@
 # IMPACGO Chain — demo logins
 
-For testing only. The website opens on the sign-in page; tap a demo account on it to fill in the email and password.
+For testing only. The website opens on the sign-in page: enter one of the emails and passwords below ("Forgot password?" sends a reset link once the backend is connected).
 The accounts are defined in `lib/core/auth.dart` (`demoUsers`). The Admin can add more in **Setup › Users & Roles**
 (name, email, mobile, password, role, warehouse / supplier, and the screens the person may open — their sidebar shows exactly those).
 Without a backend, accounts added there last until the page is reloaded; the person signed in stays signed in after a reload.

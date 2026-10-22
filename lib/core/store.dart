@@ -103,6 +103,13 @@ class AppStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Forgot password: a reset link is emailed when the address belongs to an active account
+  /// (the backend sends it once connected; here it is recorded in the email log).
+  void requestPasswordReset(String email) {
+    final u = users.where((x) => x.email.toLowerCase() == email.trim().toLowerCase() && x.active).firstOrNull;
+    if (u != null) sendEmail(u.email, 'Reset your IMPACGO Chain password', '—');
+  }
+
   /// After a reload the person who was signed in stays signed in.
   void restoreSession() {
     final email = persistStore.readSaved(_kSession);

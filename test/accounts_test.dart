@@ -32,6 +32,16 @@ void main() {
     await t.tap(find.text('Sign in').last);
     await t.pump(const Duration(milliseconds: 200));
     expect(find.text('Email or password is incorrect'), findsOneWidget);
+    // forgot password: a reset link is sent (the same message whether or not the account exists)
+    await t.tap(find.text('Forgot password?'));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('Reset your password'), findsOneWidget);
+    await t.tap(find.text('Send reset link'));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(debugToasts.last, contains('a link to reset the password has been sent'));
+    expect(S.emails.first.to, 'admin@impacgo.com');
+    await t.pump(const Duration(seconds: 4));
+    expect(find.text('Demo accounts · tap one to fill in the form'), findsNothing, reason: 'only the sign-in card');
     await t.enterText(_box('Password'), 'Admin@123');
     await t.tap(find.text('Sign in').last);
     await t.pump(const Duration(milliseconds: 400));
