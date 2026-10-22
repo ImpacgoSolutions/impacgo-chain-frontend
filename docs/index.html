@@ -31,6 +31,17 @@
 
   <title>IMPACGO Chain — Supply Chain Management</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Faster first open: start downloading the app code, the drawing engine and the fonts straight away,
+       side by side, instead of one after another once the start-up script has run. -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preload" href="main.dart.js" as="script">
+  <link rel="preload" href="assets/FontManifest.json" as="fetch" crossorigin>
+  <link rel="preload" href="assets/assets/fonts/Lato-400.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="assets/assets/fonts/Lato-500.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="assets/assets/fonts/Lato-600.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="assets/assets/fonts/Lato-700.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="assets/assets/fonts/Lato-800.ttf" as="fetch" crossorigin>
 </head>
 <body style="margin:0;background:#f1f3f8">
   <!-- Shown at once while the app downloads (the first open on a phone can take a little while),
