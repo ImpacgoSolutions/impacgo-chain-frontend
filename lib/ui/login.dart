@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text('Sign in to IMPACGO Chain', textAlign: TextAlign.center, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+                const Text('IMPACGO Chain', textAlign: TextAlign.center, style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 const Text('Use your work email and password', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: C.faint)),
                 const SizedBox(height: 24),
