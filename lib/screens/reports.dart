@@ -4,6 +4,7 @@ import '../core/report_template.dart';
 import '../core/export_helper.dart';
 import '../core/format.dart';
 import '../core/models.dart';
+import '../ui/export_options.dart';
 import '../ui/overlays.dart';
 import '../ui/select.dart';
 import '../ui/table.dart';
@@ -118,20 +119,28 @@ class _ReportTableCardState extends State<ReportTableCard> {
     return (headers: cols.map((c) => c.label).toList(), data: rows.map((r) => cols.map((c) => colText(c, r)).toList()).toList(), filters: filters);
   }
 
-  void _exportExcel(List rows) {
+  /// Export Excel / Export PDF: first choose the columns, then the file is made. The button pressed is the main one.
+  void _export(List rows, {required bool pdf}) {
     final s = _snapshot(rows);
-    exportExcel(widget.exportFilename, reportTemplate.titleOf(widget.title), s.headers, s.data, activeFilters: s.filters, summary: widget.summary?.call(rows)).then(
-      (f) => toast('Downloaded $f · ${rows.length} records'),
-      onError: (Object e) => toast('Excel export failed: $e'),
-    );
-  }
+    final title = reportTemplate.titleOf(widget.title);
+    final summary = widget.summary?.call(rows);
+    Future<void> excel(List<String> h, List<List<String>> d) async {
+      final f = await exportExcel(widget.exportFilename, title, h, d, activeFilters: s.filters, summary: summary);
+      toast('Downloaded $f · ${rows.length} records');
+    }
 
-  void _exportPdf(List rows) {
-    toast('Preparing PDF…');
-    final s = _snapshot(rows);
-    exportPdf(widget.exportFilename, reportTemplate.titleOf(widget.title), s.headers, s.data, activeFilters: s.filters, summary: widget.summary?.call(rows)).then(
-      (f) => toast('Downloaded $f · ${rows.length} records (also opened in a new tab)'),
-      onError: (Object e) => toast('PDF export failed: $e'),
+    Future<void> pdfFile(List<String> h, List<List<String>> d) async {
+      final f = await exportPdf(widget.exportFilename, title, h, d, activeFilters: s.filters, summary: summary);
+      toast('Downloaded $f · ${rows.length} records (also opened in a new tab)');
+    }
+
+    final xl = ('Export Excel', 'download', excel), pf = ('Export PDF', 'file', pdfFile);
+    openColumnExport(
+      title: 'Export · $title',
+      rememberAs: 'report:${widget.exportFilename}',
+      headers: s.headers,
+      rows: s.data,
+      outputs: pdf ? [xl, pf] : [pf, xl],
     );
   }
 
@@ -178,8 +187,8 @@ class _ReportTableCardState extends State<ReportTableCard> {
             })),
         ]),
         Wrap(spacing: 8, runSpacing: 8, children: [
-          Btn.secondary('Export Excel', icon: 'download', small: true, onTap: () => _exportExcel(rows)),
-          Btn.secondary('Export PDF', icon: 'file', small: true, onTap: () => _exportPdf(rows)),
+          Btn.secondary('Export Excel', icon: 'download', small: true, onTap: () => _export(rows, pdf: false)),
+          Btn.secondary('Export PDF', icon: 'file', small: true, onTap: () => _export(rows, pdf: true)),
         ]),
       ]),
     );

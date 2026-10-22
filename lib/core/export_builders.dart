@@ -17,6 +17,23 @@ const _companyAddress = 'Plot 12, Industrial Estate, Autonagar, Visakhapatnam, A
 const _companyContact = '+91 891 2500100 · info@impacgo.com';
 const _user = 'Srinivas Rao';
 
+/// Parts of a document PDF that can be left out of a copy (chosen in the download options before it is saved or sent).
+/// The saved document never changes; only the file does.
+class ExportPart {
+  static const gstin = 'gstin'; // customer / supplier GSTIN
+  static const address = 'address'; // customer / supplier address, ship-to and place of supply
+  static const hsn = 'hsn'; // HSN / SAC column
+  static const itemCode = 'itemCode'; // item code under each description
+  static const gst = 'gst'; // GST columns and tax totals ("GST extra as applicable" instead)
+  static const words = 'words'; // amount in words
+  static const terms = 'terms'; // terms & conditions
+  static const notes = 'notes'; // remarks, justification, verification and similar notes
+  static const status = 'status'; // the document's status
+  static const refs = 'refs'; // reference details (order, delivery note, e-way bill, vehicle, prepared by)
+  static const bank = 'bank'; // bank details
+  static const balance = 'balance'; // receipt: invoice amount, paid earlier and balance due
+}
+
 String _two(int n) => n.toString().padLeft(2, '0');
 /// A yyyy-mm-dd date in the report template's date format.
 String _dmy(String iso) {
@@ -567,7 +584,8 @@ Future<Uint8List> buildPdf(String title, List<String> headers, List<List<String>
 
 // ================================================================ GST tax invoice
 /// The sales invoice created on dispatch, laid out as a GST tax invoice.
-Future<Uint8List> buildInvoicePdf(Doc inv) async {
+Future<Uint8List> buildInvoicePdf(Doc inv, {Set<String> hide = const {}}) async {
+  bool on(String part) => !hide.contains(part);
   final c = S.cust(inv.party!);
   final calc = S.calc(inv);
   final so = inv.ref == null ? null : S.doc(inv.ref!);
@@ -598,7 +616,7 @@ Future<Uint8List> buildInvoicePdf(Doc inv) async {
     }
     lineRows.add(pw.TableRow(children: [
       cell('${i + 1}'),
-      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [_t(l.desc ?? p.name, size: 8), _t(p.id, size: 7, color: _soft)])),
+      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [_t(l.desc ?? p.name, size: 8), if (on(ExportPart.itemCode)) _t(p.id, size: 7, color: _soft)])),
       cell(p.hsn),
       cell('${l.qty} ${p.uom}', right: true),
       cell(money(l.rate), right: true),
@@ -620,11 +638,13 @@ Future<Uint8List> buildInvoicePdf(Doc inv) async {
       _pair(
         _kv([('Invoice No.', inv.id), ('Invoice Date', _dmy(inv.date)), ('Due Date', _dmy(inv.due ?? inv.date)), ('Payment Terms', 'Net ${c.terms} days')]),
         _kv([
-          ('Sales Order', so?.id ?? '-'),
-          ('Customer PO No.', ((so?.custPo ?? inv.custPo) ?? '').trim().isEmpty ? '-' : (so?.custPo ?? inv.custPo)!),
-          ('Delivery Note', dn?.id ?? '-'),
-          ('E-way Bill', calc.total > S.params.ewayLimit ? (inv.eway ?? dn?.eway ?? 'Generated') : 'Not required (below Rs.50,000)'),
-          ('Vehicle', dn?.vehicle ?? '-'),
+          if (on(ExportPart.refs)) ...[
+            ('Sales Order', so?.id ?? '-'),
+            ('Customer PO No.', ((so?.custPo ?? inv.custPo) ?? '').trim().isEmpty ? '-' : (so?.custPo ?? inv.custPo)!),
+            ('Delivery Note', dn?.id ?? '-'),
+            ('E-way Bill', calc.total > S.params.ewayLimit ? (inv.eway ?? dn?.eway ?? 'Generated') : 'Not required (below Rs.50,000)'),
+            ('Vehicle', dn?.vehicle ?? '-'),
+          ],
         ])),
       _pair(
         pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
@@ -632,7 +652,7 @@ Future<Uint8List> buildInvoicePdf(Doc inv) async {
           _t(c.name, size: 9.5, bold: true),
           _t(ad?.billTo ?? '${c.city}, ${c.state}', size: 8),
           _t('GSTIN ${c.gstin}', size: 8),
-          _t('Contact: ${c.contact} - ${c.phone}', size: 8, color: _soft),
+          if (on(ExportPart.refs)) _t('Contact: ${c.contact} - ${c.phone}', size: 8, color: _soft),
         ]),
         pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
           _label('Ship to'),
@@ -667,11 +687,9 @@ Future<Uint8List> buildInvoicePdf(Doc inv) async {
       ),
       _pair(
         pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-          _label('Amount in words'),
-          _t(rupeesInWords(rounded), size: 8.5, bold: true),
-          pw.SizedBox(height: 6),
-          _label('Bank details'),
-          _t(reportTemplate.bankDetails, size: 8),
+          if (on(ExportPart.words)) ...[_label('Amount in words'), _t(rupeesInWords(rounded), size: 8.5, bold: true)],
+          if (on(ExportPart.words) && on(ExportPart.bank)) pw.SizedBox(height: 6),
+          if (on(ExportPart.bank)) ...[_label('Bank details'), _t(reportTemplate.bankDetails, size: 8)],
         ]),
         pw.Column(children: [
               for (final r in [
@@ -685,10 +703,12 @@ Future<Uint8List> buildInvoicePdf(Doc inv) async {
             ]),
         rightWidth: 190,
         joinAbove: true),
-      pw.SizedBox(height: 10),
-      _label('Terms & conditions'),
-      _t('1. Prices are ex-warehouse unless stated otherwise. 2. Payment as per agreed terms; interest at 18% p.a. on overdue amounts. 3. Transit damage must be reported within 48 hours of delivery. 4. Subject to Visakhapatnam jurisdiction.',
-          size: 7.8, color: _soft),
+      if (on(ExportPart.terms)) ...[
+        pw.SizedBox(height: 10),
+        _label('Terms & conditions'),
+        _t('1. Prices are ex-warehouse unless stated otherwise. 2. Payment as per agreed terms; interest at 18% p.a. on overdue amounts. 3. Transit damage must be reported within 48 hours of delivery. 4. Subject to Visakhapatnam jurisdiction.',
+            size: 7.8, color: _soft),
+      ],
     ],
   ));
   return doc.save();
@@ -696,7 +716,8 @@ Future<Uint8List> buildInvoicePdf(Doc inv) async {
 
 // ================================================================ payment receipt
 /// Receipt for one customer payment (CP document) against an invoice.
-Future<Uint8List> buildReceiptPdf(Doc cp) async {
+Future<Uint8List> buildReceiptPdf(Doc cp, {Set<String> hide = const {}}) async {
+  bool on(String part) => !hide.contains(part);
   final c = S.cust(cp.party!);
   final inv = cp.ref == null ? null : S.doc(cp.ref!);
   final invAmt = inv?.amount ?? cp.amount;
@@ -714,7 +735,7 @@ Future<Uint8List> buildReceiptPdf(Doc cp) async {
           text: pw.TextSpan(style: const pw.TextStyle(fontSize: 9.5, color: _ink), children: [
         const pw.TextSpan(text: 'Received with thanks from '),
         pw.TextSpan(text: _pdfSafe(c.name), style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-        pw.TextSpan(text: ' (GSTIN ${c.gstin}) the sum of '),
+        pw.TextSpan(text: on(ExportPart.gstin) ? ' (GSTIN ${c.gstin}) the sum of ' : ' the sum of '),
         pw.TextSpan(text: _pdfSafe(rupeesInWords(cp.amount)), style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
         const pw.TextSpan(text: ' towards the invoice below.'),
       ])),
@@ -728,16 +749,20 @@ Future<Uint8List> buildReceiptPdf(Doc cp) async {
       _pair(
         _kv([
           ('Payment mode', cp.mode ?? '-'),
-          ('Bank reference', (cp.utr ?? '').isEmpty ? '-' : cp.utr!),
-          ('Transaction date', _dmy(cp.date)),
-          ('Deposited to', (cp.mode ?? '') == 'Cash' ? 'Cash' : 'HDFC Current A/c ...5678'),
+          if (on(ExportPart.refs)) ...[
+            ('Bank reference', (cp.utr ?? '').isEmpty ? '-' : cp.utr!),
+            ('Transaction date', _dmy(cp.date)),
+            ('Deposited to', (cp.mode ?? '') == 'Cash' ? 'Cash' : 'HDFC Current A/c ...5678'),
+          ],
         ]),
         _kv([
           ('Against invoice', inv?.id ?? '-'),
-          ('Invoice amount', money(invAmt)),
-          ('Paid earlier', money(paidBefore)),
+          if (on(ExportPart.balance)) ...[
+            ('Invoice amount', money(invAmt)),
+            ('Paid earlier', money(paidBefore)),
+          ],
           ('This payment', money(cp.amount)),
-          ('Balance due', money(balance < 0 ? 0 : balance)),
+          if (on(ExportPart.balance)) ('Balance due', money(balance < 0 ? 0 : balance)),
         ])),
       pw.Spacer(),
       _footer(ctx, reportTemplate.receiptFooter),
@@ -909,13 +934,16 @@ Future<Uint8List> buildSupplierInvoicePdf(Doc pi) async {
 
 // ================================================================ order documents
 /// Printable quotation, sales order, purchase order or purchase request.
-Future<Uint8List> buildOrderPdf(Doc d) async {
+Future<Uint8List> buildOrderPdf(Doc d, {Set<String> hide = const {}}) async {
   const titles = {'QT': 'QUOTATION', 'SO': 'SALES ORDER', 'PO': 'PURCHASE ORDER', 'PR': 'PURCHASE REQUEST'};
+  bool on(String part) => !hide.contains(part);
   final sales = d.type == 'QT' || d.type == 'SO';
   final w = S.wh(d.wh);
   final calc = S.calc(d);
   final inter = calc.inter;
-  final rounded = calc.total.roundToDouble();
+  final gst = on(ExportPart.gst), hsn = on(ExportPart.hsn);
+  // without the GST columns the document shows the value before tax ("GST extra as applicable")
+  final rounded = (gst ? calc.total : calc.sub).roundToDouble();
   final doc = pw.Document(theme: await _pdfTheme(), title: '${titles[d.type] ?? d.type} ${d.id}', author: S.currentCompany);
 
   // the other party: customer for sales documents, supplier for purchase documents
@@ -945,6 +973,19 @@ Future<Uint8List> buildOrderPdf(Doc d) async {
         child: _t(head ? v.toUpperCase() : v, size: head ? 6.8 : 8, bold: head, color: head ? _soft : _ink, align: right ? pw.TextAlign.right : pw.TextAlign.left),
       );
 
+  // the table's columns: (heading, width, right-aligned); HSN and the GST columns only when they are kept
+  final cols = <(String, pw.TableColumnWidth, bool)>[
+    ('#', const pw.FixedColumnWidth(18), false),
+    ('Item', const pw.FlexColumnWidth(3), false),
+    if (hsn) ('HSN/SAC', const pw.FixedColumnWidth(36), false),
+    ('Qty', const pw.FixedColumnWidth(48), true),
+    ('Rate', const pw.FixedColumnWidth(50), true),
+    if (gst) ('Taxable', const pw.FixedColumnWidth(58), true),
+    if (gst && inter) ('IGST', const pw.FixedColumnWidth(70), true),
+    if (gst && !inter) ...[('CGST', const pw.FixedColumnWidth(62), true), ('SGST', const pw.FixedColumnWidth(62), true)],
+    ('Amount', const pw.FixedColumnWidth(62), true),
+  ];
+
   double half = 0, igst = 0;
   final rows = <pw.TableRow>[];
   for (var i = 0; i < d.lines.length; i++) {
@@ -960,16 +1001,19 @@ Future<Uint8List> buildOrderPdf(Doc d) async {
     }
     rows.add(pw.TableRow(children: [
       cell('${i + 1}'),
-      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [_t(l.desc ?? p.name, size: 8), _t(p.id, size: 7, color: _soft)])),
-      cell(p.hsn),
+      pw.Padding(
+          padding: const pw.EdgeInsets.all(4),
+          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [_t(l.desc ?? p.name, size: 8), if (on(ExportPart.itemCode)) _t(p.id, size: 7, color: _soft)])),
+      if (hsn) cell(p.hsn),
       cell('$qty ${p.uom}', right: true),
       cell(money(l.rate), right: true),
-      cell(money(taxable), right: true),
-      if (inter) cell('${p.gst}% - ${money(tax)}', right: true) else ...[
+      if (gst) cell(money(taxable), right: true),
+      if (gst && inter) cell('${p.gst}% - ${money(tax)}', right: true),
+      if (gst && !inter) ...[
         cell('${p.gst / 2}% - ${money(tax / 2)}'.replaceAll('.0%', '%'), right: true),
         cell('${p.gst / 2}% - ${money(tax / 2)}'.replaceAll('.0%', '%'), right: true),
       ],
-      cell(money(taxable + tax), right: true),
+      cell(money(gst ? taxable + tax : taxable), right: true),
     ]));
   }
 
@@ -977,6 +1021,7 @@ Future<Uint8List> buildOrderPdf(Doc d) async {
       ? '1. Prices are ex-warehouse unless stated otherwise. 2. Payment as per agreed terms; interest at 18% p.a. on overdue amounts. 3. Transit damage must be reported within 48 hours of delivery. 4. Subject to Visakhapatnam jurisdiction.'
       : '1. Quote our PO number on the invoice and delivery challan. 2. Goods are accepted only after quality check; rejected goods are returned at the supplier\'s cost. 3. Deliver to the warehouse shown, Monday to Saturday, 9 am to 5 pm. 4. Subject to Visakhapatnam jurisdiction.';
 
+  final words = on(ExportPart.words);
   doc.addPage(pw.MultiPage(
     pageFormat: PdfPageFormat.a4,
     margin: const pw.EdgeInsets.fromLTRB(30, 28, 30, 24),
@@ -988,76 +1033,67 @@ Future<Uint8List> buildOrderPdf(Doc d) async {
           ('Document No.', d.id),
           ('Date', _dmy(d.date)),
           if (dateLabel != null && dateLabel.$2 != null) (dateLabel.$1, _dmy(dateLabel.$2!)),
-          ('Status', d.status),
+          if (on(ExportPart.status)) ('Status', d.status),
         ]),
         _kv([
-          ('Reference', d.ref ?? '-'),
+          if (on(ExportPart.refs)) ('Reference', d.ref ?? '-'),
           ('Warehouse', '${w.code} - ${w.city}'),
           if (terms.isNotEmpty) ('Payment Terms', terms),
-          ('Prepared by', (d.by ?? 'Srinivas Rao').split(' (').first),
+          if (on(ExportPart.refs)) ('Prepared by', (d.by ?? 'Srinivas Rao').split(' (').first),
         ]),
       ),
       _pair(
         pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
           _label(sales ? 'Customer' : (d.type == 'PR' ? 'Preferred supplier' : 'Supplier')),
           _t(partyName, size: 9.5, bold: true),
-          if (partyLines.isNotEmpty) _t(partyLines, size: 8),
-          if (partyGstin.isNotEmpty) _t('GSTIN $partyGstin', size: 8),
+          if (partyLines.isNotEmpty && on(ExportPart.address)) _t(partyLines, size: 8),
+          if (partyGstin.isNotEmpty && on(ExportPart.gstin)) _t('GSTIN $partyGstin', size: 8),
         ]),
         pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
           _label(sales ? 'Ship to' : 'Deliver to'),
           _t(shipName, size: 9.5, bold: true),
-          _t(shipLines, size: 8),
-          pw.SizedBox(height: 4),
-          _t('Place of supply: ${kStateCodes[shipState] ?? '37'} - $shipState', size: 8, bold: true),
+          if (on(ExportPart.address)) ...[
+            _t(shipLines, size: 8),
+            pw.SizedBox(height: 4),
+            _t('Place of supply: ${kStateCodes[shipState] ?? '37'} - $shipState', size: 8, bold: true),
+          ],
         ]),
         joinAbove: true,
       ),
       pw.SizedBox(height: 10),
       pw.Table(
         border: pw.TableBorder.all(color: _line, width: .6),
-        columnWidths: {
-          0: const pw.FixedColumnWidth(18),
-          1: const pw.FlexColumnWidth(3),
-          2: const pw.FixedColumnWidth(36),
-          3: const pw.FixedColumnWidth(48),
-          4: const pw.FixedColumnWidth(50),
-          5: const pw.FixedColumnWidth(58),
-          if (inter) 6: const pw.FixedColumnWidth(70) else ...{6: const pw.FixedColumnWidth(62), 7: const pw.FixedColumnWidth(62)},
-          (inter ? 7 : 8): const pw.FixedColumnWidth(62),
-        },
+        columnWidths: {for (var i = 0; i < cols.length; i++) i: cols[i].$2},
         children: [
-          pw.TableRow(decoration: const pw.BoxDecoration(color: _band), children: [
-            cell('#', head: true), cell('Item', head: true), cell('HSN/SAC', head: true), cell('Qty', head: true, right: true), cell('Rate', head: true, right: true),
-            cell('Taxable', head: true, right: true),
-            if (inter) cell('IGST', head: true, right: true) else ...[cell('CGST', head: true, right: true), cell('SGST', head: true, right: true)],
-            cell('Amount', head: true, right: true),
-          ]),
+          pw.TableRow(decoration: const pw.BoxDecoration(color: _band), children: [for (final c in cols) cell(c.$1, head: true, right: c.$3)]),
           ...rows,
         ],
       ),
       _pair(
         pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-          _label('Amount in words'),
-          _t(rupeesInWords(rounded), size: 8.5, bold: true),
+          if (words) ...[_label('Amount in words'), _t(rupeesInWords(rounded), size: 8.5, bold: true)],
+          if (!gst) ...[if (words) pw.SizedBox(height: 6), _label('GST'), _t('GST extra as applicable', size: 8.5)],
           if (fxNote(d) != null) ...[pw.SizedBox(height: 6), _label('Currency'), _t(fxNote(d)!, size: 8.5)],
         ]),
         pw.Column(children: [
-          for (final r in [
-            ('Taxable value', calc.sub),
-            if (inter) ('IGST', igst) else ...[('CGST', half), ('SGST', half)],
-            ('Round-off', rounded - calc.total),
-          ])
-            pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [_t(r.$1, size: 8.5, color: _soft), _t(money(r.$2), size: 8.5)]),
-          pw.Divider(color: _ink, thickness: .8, height: 8),
-          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [_t('Total', size: 10, bold: true), _t('Rs. ${money(rounded)}', size: 10, bold: true)]),
+          if (gst)
+            for (final r in [
+              ('Taxable value', calc.sub),
+              if (inter) ('IGST', igst) else ...[('CGST', half), ('SGST', half)],
+              ('Round-off', rounded - calc.total),
+            ])
+              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [_t(r.$1, size: 8.5, color: _soft), _t(money(r.$2), size: 8.5)]),
+          if (gst) pw.Divider(color: _ink, thickness: .8, height: 8),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [_t(gst ? 'Total' : 'Total (before GST)', size: 10, bold: true), _t('Rs. ${money(rounded)}', size: 10, bold: true)]),
         ]),
         rightWidth: 190,
         joinAbove: true,
       ),
-      pw.SizedBox(height: 10),
-      _label('Terms & conditions'),
-      _t(tnc, size: 7.8, color: _soft),
+      if (on(ExportPart.terms)) ...[
+        pw.SizedBox(height: 10),
+        _label('Terms & conditions'),
+        _t(tnc, size: 7.8, color: _soft),
+      ],
     ],
   ));
   return doc.save();
@@ -1081,12 +1117,45 @@ Future<Uint8List> _cleanPdf({
   String tableTitle = 'Line items',
   List<(String, String)> totals = const [],
   (String, String)? grand,
+  /// The grand total without tax: printed instead of [grand] when the GST columns are left out.
+  (String, String)? grandNoTax,
   List<(String, String)> notes = const [],
+  /// Parts left out of this copy, chosen in the download options (see [ExportPart]).
+  Set<String> hide = const {},
 }) async {
   // no supplier on the document: leave its supplier lines out instead of printing '-'
-  bool keep((String, String) p) => !(p.$1.startsWith('Supplier') && p.$2 == '-');
+  bool keep((String, String) p) =>
+      !(p.$1.startsWith('Supplier') && p.$2 == '-') &&
+      !(hide.contains(ExportPart.gstin) && p.$1.contains('GSTIN')) &&
+      !(hide.contains(ExportPart.address) && p.$1.contains('Address'));
   left = left.where(keep).toList();
   right = right.where(keep).toList();
+  // columns left out (HSN / SAC, GST): removed from the headings, every row and the column widths
+  final drop = <int>{
+    for (var i = 0; i < heads.length; i++)
+      if ((hide.contains(ExportPart.hsn) && heads[i] == 'HSN / SAC') || (hide.contains(ExportPart.gst) && heads[i] == 'GST')) i,
+  };
+  if (drop.isNotEmpty) {
+    final keepCols = [for (var i = 0; i < heads.length; i++) if (!drop.contains(i)) i];
+    heads = [for (final i in keepCols) heads[i]];
+    rows = [for (final r in rows) [for (final i in keepCols) if (i < r.length) r[i]]];
+    widths = {for (var n = 0; n < keepCols.length; n++) if (widths[keepCols[n]] != null) n: widths[keepCols[n]]!};
+    rightCols = {for (var n = 0; n < keepCols.length; n++) if (rightCols.contains(keepCols[n])) n};
+  }
+  if (hide.contains(ExportPart.itemCode)) subs = const [];
+  if (hide.contains(ExportPart.gst)) {
+    totals = const [];
+    grand = grandNoTax ?? grand;
+    notes = [...notes, ('GST', 'GST extra as applicable')];
+  }
+  notes = [
+    for (final n in notes)
+      if (!(hide.contains(ExportPart.terms) && n.$1 == 'Terms & conditions') &&
+          !(hide.contains(ExportPart.words) && n.$1 == 'Amount in words') &&
+          !(hide.contains(ExportPart.notes) && !const {'Terms & conditions', 'Amount in words', 'GST', 'Currency'}.contains(n.$1)))
+        n,
+  ];
+  final showStatus = !hide.contains(ExportPart.status);
   final doc = pw.Document(theme: await _pdfTheme(), title: '$title $id', author: S.currentCompany);
   const side = pw.BorderSide(color: _line, width: .7);
 
@@ -1132,8 +1201,7 @@ Future<Uint8List> _cleanPdf({
           _t(title, size: 15, bold: true),
           pw.SizedBox(height: 4),
           _t(id, size: 10, bold: true),
-          pw.SizedBox(height: 2),
-          _t('Status: $status', size: 8.5, color: _soft),
+          if (showStatus) ...[pw.SizedBox(height: 2), _t('Status: $status', size: 8.5, color: _soft)],
         ]),
       ]),
       pw.SizedBox(height: 10),
@@ -1262,7 +1330,9 @@ String _deliverTo(Doc d) {
 }
 
 /// Purchase request: same order as the request form.
-Future<Uint8List> buildPurchaseRequestPdf(Doc d) => _cleanPdf(
+Future<Uint8List> buildPurchaseRequestPdf(Doc d, {Set<String> hide = const {}}) => _cleanPdf(
+      hide: hide,
+      grandNoTax: ('Estimated total (before GST)', _rs(S.calc(d).sub)),
       title: 'PURCHASE REQUEST',
       id: d.id,
       status: d.status,
@@ -1288,10 +1358,12 @@ Future<Uint8List> buildPurchaseRequestPdf(Doc d) => _cleanPdf(
     );
 
 /// Purchase order sent to the supplier.
-Future<Uint8List> buildPurchaseOrderPdf(Doc d) {
+Future<Uint8List> buildPurchaseOrderPdf(Doc d, {Set<String> hide = const {}}) {
   final pr = d.ref == null ? null : S.doc(d.ref!);
   final terms = S.suppliers.where((s) => s.id == d.party).firstOrNull?.terms;
   return _cleanPdf(
+    hide: hide,
+    grandNoTax: ('PO total (before GST)', _rs(S.calc(d).sub)),
     title: 'PURCHASE ORDER',
     id: d.id,
     status: d.status,
@@ -1313,10 +1385,11 @@ Future<Uint8List> buildPurchaseOrderPdf(Doc d) {
 }
 
 /// Goods receipt note: what arrived against the PO.
-Future<Uint8List> buildGrnPdf(Doc g) {
+Future<Uint8List> buildGrnPdf(Doc g, {Set<String> hide = const {}}) {
   final po = g.ref == null ? null : S.doc(g.ref!);
   final qcOk = qcDone(g);
   return _cleanPdf(
+    hide: hide,
     title: 'GOODS RECEIPT NOTE',
     id: g.id,
     status: g.status,
@@ -1343,7 +1416,7 @@ Future<Uint8List> buildGrnPdf(Doc g) {
 }
 
 /// Quality check report for a goods receipt.
-Future<Uint8List> buildQcPdf(Doc g) {
+Future<Uint8List> buildQcPdf(Doc g, {Set<String> hide = const {}}) {
   final po = g.ref == null ? null : S.doc(g.ref!);
   final inspector = g.qcBy ?? 'Lakshmi P (QC Inspector)';
   final qcDate = g.qcDate ?? g.date;
@@ -1354,6 +1427,7 @@ Future<Uint8List> buildQcPdf(Doc g) {
           ? (totalRej == 0 ? 'Passed' : (g.lines.every((l) => l.acc == 0) ? 'Failed' : 'Partially passed'))
           : 'Passed');
   return _cleanPdf(
+    hide: hide,
     title: 'QUALITY CHECK REPORT',
     id: 'QC-${g.id}',
     status: qcResult,
@@ -1381,10 +1455,11 @@ Future<Uint8List> buildQcPdf(Doc g) {
 }
 
 /// Purchase invoice from the supplier, as recorded and verified.
-Future<Uint8List> buildPurchaseInvoicePdf(Doc pi) {
+Future<Uint8List> buildPurchaseInvoicePdf(Doc pi, {Set<String> hide = const {}}) {
   final po = pi.ref == null ? null : S.doc(pi.ref!);
   final grn = po == null ? null : S.docsOf('GRN').where((g) => g.ref == po.id).firstOrNull;
   return _cleanPdf(
+    hide: hide,
     title: 'PURCHASE INVOICE',
     id: pi.id,
     status: pi.status,
@@ -1402,9 +1477,10 @@ Future<Uint8List> buildPurchaseInvoicePdf(Doc pi) {
 }
 
 /// Purchase return note: the goods going back to the supplier against a goods receipt.
-Future<Uint8List> buildPurchaseReturnPdf(Doc r) {
+Future<Uint8List> buildPurchaseReturnPdf(Doc r, {Set<String> hide = const {}}) {
   final g = r.ref == null ? null : S.doc(r.ref!);
   return _cleanPdf(
+    hide: hide,
     title: 'PURCHASE RETURN',
     id: r.id,
     status: r.status,

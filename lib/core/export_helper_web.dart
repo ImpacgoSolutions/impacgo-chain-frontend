@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:html' as html;
 import 'dart:typed_data';
+import 'package:flutter/widgets.dart';
 import 'export_builders.dart';
 
 /// Saves [bytes] as a file. The object URL is kept alive for a while so the
@@ -47,6 +48,41 @@ Future<String> viewPdf(Uint8List bytes) async {
   html.window.open(url, '_blank');
   Future.delayed(const Duration(minutes: 5), () => html.Url.revokeObjectUrl(url));
   return 'a new tab';
+}
+
+/// The PDF drawn inside the page (the browser's own PDF viewer in a frame), for the download options' preview.
+/// Each new [bytes] gets a fresh frame; the old file is released.
+Widget pdfPreview(Uint8List bytes) => _PdfFrame(bytes, key: ObjectKey(bytes));
+
+class _PdfFrame extends StatefulWidget {
+  final Uint8List bytes;
+  const _PdfFrame(this.bytes, {super.key});
+  @override
+  State<_PdfFrame> createState() => _PdfFrameState();
+}
+
+class _PdfFrameState extends State<_PdfFrame> {
+  late final String _url = html.Url.createObjectUrlFromBlob(html.Blob([widget.bytes], 'application/pdf'));
+
+  @override
+  void dispose() {
+    html.Url.revokeObjectUrl(_url);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => HtmlElementView.fromTagName(
+        tagName: 'iframe',
+        onElementCreated: (Object e) {
+          final f = e as html.IFrameElement;
+          // fit the page width, no side panel
+          f.src = '$_url#toolbar=0&navpanes=0&view=FitH';
+          f.style
+            ..border = '0'
+            ..width = '100%'
+            ..height = '100%';
+        },
+      );
 }
 
 /// A ready-made PDF document (tax invoice, payment receipt): opens in a new tab and downloads.

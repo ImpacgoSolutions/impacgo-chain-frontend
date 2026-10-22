@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/widgets.dart';
 import 'export_builders.dart';
 
 /// Desktop / mobile: writes the file to the user's Downloads folder (or the temp folder).
@@ -23,6 +24,9 @@ Future<String> exportCsv(String filename, List<String> headers, List<List<String
 
 /// Preview: desktop has no browser tab, so the PDF is saved to Downloads to open from there.
 Future<String> viewPdf(List<int> bytes) => _save(bytes, 'Template_Preview.pdf');
+
+/// The download options' preview: outside the browser there is no PDF viewer to show it in the page.
+Widget pdfPreview(Uint8List bytes) => const Center(child: Text('Preview opens in the browser'));
 
 /// A ready-made PDF document (tax invoice, payment receipt) saved to Downloads.
 Future<String> exportDocPdf(String fname, List<int> bytes) => _save(bytes, fname);

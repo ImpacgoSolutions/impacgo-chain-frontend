@@ -3,6 +3,7 @@ import 'select.dart';
 import 'tokens.dart';
 import 'widgets.dart';
 import '../core/export_helper.dart';
+import 'export_options.dart';
 
 /// Text of a cell for export: the column's own text, or what its widget shows.
 String colText(Col c, dynamic r) => c.text != null ? c.text!(r) : widgetText(c.cell(r));
@@ -177,11 +178,21 @@ class _DataTableCardState extends State<DataTableCard> {
     return rows;
   }
 
+  /// Export CSV: first choose the columns, then the file is saved.
   void _export(List rows) {
     final cols = widget.cols.where((c) => c.label.trim().isNotEmpty).toList();
-    exportCsv(widget.exportName ?? widget.id, cols.map((c) => c.label).toList(), rows.map((r) => cols.map((c) => colText(c, r)).toList()).toList()).then(
-      (f) => TableHooks.toast?.call('Downloaded $f · ${rows.length} rows'),
-      onError: (Object e) => TableHooks.toast?.call('Export failed: $e'),
+    final name = widget.exportName ?? widget.id;
+    openColumnExport(
+      title: 'Export CSV · ${rows.length} ${rows.length == 1 ? 'row' : 'rows'}',
+      rememberAs: 'table:$name',
+      headers: cols.map((c) => c.label).toList(),
+      rows: rows.map((r) => cols.map((c) => colText(c, r)).toList()).toList(),
+      outputs: [
+        ('Download CSV', 'download', (h, d) async {
+          final f = await exportCsv(name, h, d);
+          TableHooks.toast?.call('Downloaded $f · ${rows.length} rows');
+        }),
+      ],
     );
   }
 

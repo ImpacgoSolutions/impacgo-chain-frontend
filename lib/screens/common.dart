@@ -1,6 +1,7 @@
 // Shared document machinery: list tables, the document drawer with its
 // action buttons, action dialogs, the new-document form and party/item drawers.
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import '../ui/select.dart';
@@ -20,8 +21,9 @@ import 'attachments.dart';
 import 'addresses.dart';
 import 'buy_report.dart';
 import 'grn_form.dart';
-import '../core/export_builders.dart' show buildInvoicePdf, buildReceiptPdf, buildOrderPdf, buildPurchaseRequestPdf, buildPurchaseOrderPdf, buildGrnPdf, buildQcPdf, buildPurchaseInvoicePdf, buildPurchaseReturnPdf;
+import '../core/export_builders.dart' show buildInvoicePdf, buildReceiptPdf, buildOrderPdf, buildPurchaseRequestPdf, buildPurchaseOrderPdf, buildGrnPdf, buildQcPdf, buildPurchaseInvoicePdf, buildPurchaseReturnPdf, ExportPart;
 import '../core/export_helper.dart' show exportDocPdf;
+import '../ui/export_options.dart';
 
 // ================================================================ helpers
 void after(Res r) {
@@ -742,18 +744,87 @@ List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
 }
 
 // ================================================================ invoice / receipt downloads
+/// Saves the chosen copy of a document (it also opens in a new tab).
+Future<void> _saveDocPdf(String fname, Uint8List bytes) async {
+  final f = await exportDocPdf(fname, bytes);
+  toast('Downloaded $f (also opened in a new tab)');
+}
+
+/// What can be left out of each document's PDF before it is downloaded. On the tax documents (tax invoice,
+/// purchase invoice, purchase return) the GSTINs, addresses, HSN and GST stay: they are required by GST.
+List<ExportChoice> docExportChoices(String type) {
+  const details = 'Details', items = 'Line items', notes = 'Totals & notes';
+  final tax = const {'INV', 'PI', 'PRT'}.contains(type);
+  final sales = const {'QT', 'SO', 'INV', 'CP'}.contains(type);
+  final party = sales ? 'Customer' : 'Supplier';
+  ExportChoice gstin() => ExportChoice(ExportPart.gstin, '$party GSTIN', group: details, locked: tax);
+  ExportChoice hsn() => ExportChoice(ExportPart.hsn, 'HSN / SAC', group: items, locked: tax);
+  ExportChoice code() => const ExportChoice(ExportPart.itemCode, 'Item code under the description', group: items);
+  ExportChoice gst() => ExportChoice(ExportPart.gst, 'GST columns & tax totals', group: items, locked: tax);
+  ExportChoice status() => const ExportChoice(ExportPart.status, 'Document status', group: details);
+  switch (type) {
+    case 'QT':
+    case 'SO':
+      return [
+        gstin(),
+        const ExportChoice(ExportPart.address, 'Addresses & place of supply', group: details),
+        const ExportChoice(ExportPart.refs, 'Reference & prepared by', group: details),
+        status(),
+        hsn(), code(), gst(),
+        const ExportChoice(ExportPart.words, 'Amount in words', group: notes),
+        const ExportChoice(ExportPart.terms, 'Terms & conditions', group: notes),
+      ];
+    case 'PR':
+      return [gstin(), status(), hsn(), code(), gst(), const ExportChoice(ExportPart.notes, 'Business justification & remarks', group: notes)];
+    case 'PO':
+      return [
+        gstin(),
+        const ExportChoice(ExportPart.address, 'Supplier address', group: details),
+        status(),
+        hsn(), code(), gst(),
+        const ExportChoice(ExportPart.terms, 'Terms & conditions', group: notes),
+      ];
+    case 'GRN':
+      return [gstin(), status(), hsn(), code(), const ExportChoice(ExportPart.notes, 'Remarks & storage bins', group: notes)];
+    case 'QC':
+      return [hsn(), code(), const ExportChoice(ExportPart.notes, 'Rejection reason', group: notes)];
+    case 'PI':
+      return [
+        gstin(), status(), hsn(), code(), gst(),
+        const ExportChoice(ExportPart.words, 'Amount in words', group: notes),
+        const ExportChoice(ExportPart.notes, 'Verification result', group: notes),
+      ];
+    case 'PRT':
+      return [gstin(), status(), hsn(), code(), gst(), const ExportChoice(ExportPart.notes, 'Remarks', group: notes)];
+    case 'INV':
+      return [
+        gstin(),
+        const ExportChoice(ExportPart.address, 'Addresses & place of supply', group: details, locked: true),
+        const ExportChoice(ExportPart.refs, 'Order, delivery, e-way bill & contact', group: details),
+        hsn(), code(), gst(),
+        const ExportChoice(ExportPart.words, 'Amount in words', group: notes),
+        const ExportChoice(ExportPart.bank, 'Bank details', group: notes),
+        const ExportChoice(ExportPart.terms, 'Terms & conditions', group: notes),
+      ];
+    case 'CP':
+      return [
+        gstin(),
+        const ExportChoice(ExportPart.refs, 'Bank reference & deposit details', group: details),
+        const ExportChoice(ExportPart.balance, 'Invoice amount, paid earlier & balance due', group: details),
+      ];
+  }
+  return const [];
+}
 /// The sales invoice raised when this delivery was dispatched.
 Doc? invoiceFor(Doc dn) => S.docsOf('INV').where((i) => i.ref == dn.ref || i.ref == dn.id).firstOrNull;
 
-Future<void> downloadInvoice(Doc inv) async {
-  toast('Preparing invoice ${inv.id}…');
-  try {
-    final f = await exportDocPdf('Invoice_${inv.id.replaceAll('/', '-')}.pdf', await buildInvoicePdf(inv));
-    toast('Downloaded $f (also opened in a new tab)');
-  } catch (e) {
-    toast('Invoice download failed: $e');
-  }
-}
+Future<void> downloadInvoice(Doc inv) => openDocExport(
+      title: 'Download Tax Invoice · ${inv.id}',
+      rememberAs: 'INV',
+      choices: docExportChoices('INV'),
+      build: (h) => buildInvoicePdf(inv, hide: h),
+      download: (b) => _saveDocPdf('Invoice_${inv.id.replaceAll('/', '-')}.pdf', b),
+    );
 
 /// Purchase order › Generate invoice: the purchase invoice for the goods the supplier sent
 /// (quantities and rates from the PO, editable). It opens straight away, ready to verify and download.
@@ -797,65 +868,53 @@ void dlgGenerateInvoice(Doc po) {
   }, btn: 'Generate invoice', icon: 'file', status: 'Draft', statusNote: 'Checked automatically against the PO and goods receipt: Approved when it matches, Pending Approval when there is a difference.');
 }
 
-Future<void> downloadPrt(Doc d) async {
-  toast('Preparing purchase return ${d.id}…');
-  try {
-    final f = await exportDocPdf('Purchase_Return_${d.id}.pdf', await buildPurchaseReturnPdf(d));
-    toast('Downloaded $f (also opened in a new tab)');
-  } catch (e) {
-    toast('Download failed: $e');
-  }
-}
+Future<void> downloadPrt(Doc d) => openDocExport(
+      title: 'Download Purchase Return · ${d.id}',
+      rememberAs: 'PRT',
+      choices: docExportChoices('PRT'),
+      build: (h) => buildPurchaseReturnPdf(d, hide: h),
+      download: (b) => _saveDocPdf('Purchase_Return_${d.id}.pdf', b),
+    );
 
-Future<void> downloadGrn(Doc g) async {
-  toast('Preparing goods receipt ${g.id}…');
-  try {
-    final f = await exportDocPdf('Goods_Receipt_${g.id}.pdf', await buildGrnPdf(g));
-    toast('Downloaded $f (also opened in a new tab)');
-  } catch (e) {
-    toast('Download failed: $e');
-  }
-}
+Future<void> downloadGrn(Doc g) => openDocExport(
+      title: 'Download Goods Receipt · ${g.id}',
+      rememberAs: 'GRN',
+      choices: docExportChoices('GRN'),
+      build: (h) => buildGrnPdf(g, hide: h),
+      download: (b) => _saveDocPdf('Goods_Receipt_${g.id}.pdf', b),
+    );
 
-Future<void> downloadQc(Doc g) async {
-  toast('Preparing QC report for ${g.id}…');
-  try {
-    final f = await exportDocPdf('QC_Report_${g.id}.pdf', await buildQcPdf(g));
-    toast('Downloaded $f (also opened in a new tab)');
-  } catch (e) {
-    toast('Download failed: $e');
-  }
-}
+Future<void> downloadQc(Doc g) => openDocExport(
+      title: 'Download QC Report · ${g.id}',
+      rememberAs: 'QC',
+      choices: docExportChoices('QC'),
+      build: (h) => buildQcPdf(g, hide: h),
+      download: (b) => _saveDocPdf('QC_Report_${g.id}.pdf', b),
+    );
 
-Future<void> downloadSupplierInvoice(Doc pi) async {
-  toast('Preparing supplier invoice ${pi.supInv ?? pi.id}…');
-  try {
-    final f = await exportDocPdf('Purchase_Invoice_${pi.id}.pdf', await buildPurchaseInvoicePdf(pi));
-    toast('Downloaded $f (also opened in a new tab)');
-  } catch (e) {
-    toast('Supplier invoice download failed: $e');
-  }
-}
+Future<void> downloadSupplierInvoice(Doc pi) => openDocExport(
+      title: 'Download Purchase Invoice · ${pi.supInv ?? pi.id}',
+      rememberAs: 'PI',
+      choices: docExportChoices('PI'),
+      build: (h) => buildPurchaseInvoicePdf(pi, hide: h),
+      download: (b) => _saveDocPdf('Purchase_Invoice_${pi.id}.pdf', b),
+    );
 
-Future<void> downloadOrder(Doc d) async {
-  toast('Preparing ${docTitle(d.type)} ${d.id}…');
-  try {
-    final f = await exportDocPdf('${docTitle(d.type).replaceAll(' ', '_')}_${d.id}.pdf', await (d.type == 'PR' ? buildPurchaseRequestPdf(d) : d.type == 'PO' ? buildPurchaseOrderPdf(d) : buildOrderPdf(d)));
-    toast('Downloaded $f (also opened in a new tab)');
-  } catch (e) {
-    toast('Download failed: $e');
-  }
-}
+Future<void> downloadOrder(Doc d) => openDocExport(
+      title: 'Download ${docTitle(d.type)} · ${d.id}',
+      rememberAs: d.type,
+      choices: docExportChoices(d.type),
+      build: (h) => d.type == 'PR' ? buildPurchaseRequestPdf(d, hide: h) : d.type == 'PO' ? buildPurchaseOrderPdf(d, hide: h) : buildOrderPdf(d, hide: h),
+      download: (b) => _saveDocPdf('${docTitle(d.type).replaceAll(' ', '_')}_${d.id}.pdf', b),
+    );
 
-Future<void> downloadReceipt(Doc cp) async {
-  toast('Preparing receipt ${cp.id}…');
-  try {
-    final f = await exportDocPdf('Receipt_${cp.id}.pdf', await buildReceiptPdf(cp));
-    toast('Downloaded $f (also opened in a new tab)');
-  } catch (e) {
-    toast('Receipt download failed: $e');
-  }
-}
+Future<void> downloadReceipt(Doc cp) => openDocExport(
+      title: 'Download Payment Receipt · ${cp.id}',
+      rememberAs: 'CP',
+      choices: docExportChoices('CP'),
+      build: (h) => buildReceiptPdf(cp, hide: h),
+      download: (b) => _saveDocPdf('Receipt_${cp.id}.pdf', b),
+    );
 
 // ================================================================ action dialogs
 /// [record] opens the pick list as its own form page: changeable until it is confirmed, then shown as it was filled in.
