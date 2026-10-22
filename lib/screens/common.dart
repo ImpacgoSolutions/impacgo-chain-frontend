@@ -2037,6 +2037,157 @@ class _DocFormState extends State<DocForm> {
     lines.add(l);
   }
 
+  /// The line items, every field visible without sliding sideways: a table filling the form's width on a laptop,
+  /// one card per line (fields wrapped under each other) where the screen is too narrow for the table.
+  Widget _lineItems({required bool pr, required bool po, required bool tr, required bool adj, required bool lx, required bool noPrice}) {
+    const head = TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: C.soft);
+    const small = TextStyle(fontSize: 12.5);
+    // text boxes as tall as the dropdowns next to them
+    const box = EdgeInsets.symmetric(horizontal: 10, vertical: 15);
+    Widget calc(Widget Function() f) => ValueListenableBuilder<int>(valueListenable: _calc, builder: (_, __, ___) => f());
+    Widget amount(double Function(int) f, int i) => calc(() => Text(_m(f(i)), style: const TextStyle(fontSize: 12)));
+    final tracked = lines.any((l) => l.item.isNotEmpty && S.items.any((p) => p.id == l.item && p.track != 'None'));
+    void pickItem(int i, String v) => setState(() {
+          lines[i].item = v;
+          if (v.isEmpty) return; // description-only line
+          final itemObj = S.item(v);
+          lines[i].descCtl.text = itemObj.name;
+          lines[i].hsnCtl.text = itemObj.hsn;
+          lines[i].uom = itemObj.uom;
+          lines[i].rateCtl.text = _rateText((widget.t.startsWith('P') || const ['GRN', 'ADJ', 'TR'].contains(widget.t) ? itemObj.cost : itemObj.price) / _fx);
+          lines[i].taxCode = S.taxNameFor(itemObj.gst);
+          // a request line starts with the item's usual supplier (it can be changed)
+          if (pr && lines[i].sup.isEmpty && S.suppliers.any((x) => x.id == itemObj.sup && x.status != 'Inactive')) {
+            lines[i].sup = itemObj.sup;
+            lines[i].rateCtl.text = _rateText(S.purchasePrice(itemObj.sup, v, lines[i].qty < 1 ? 1 : lines[i].qty.toInt()).rate / _fx);
+          }
+        });
+    Widget num(TextEditingController c) => TextField(controller: c, keyboardType: TextInputType.number, style: small, decoration: const InputDecoration(contentPadding: box), onChanged: (_) => _calc.value++);
+
+    // main row: (heading, narrowest width, share of the spare width, right-aligned, cell)
+    final cols = <(String, double, double, bool, Widget Function(int))>[
+      ('Item', 140, 2.2, false, (i) => ItemSearchField(value: lines[i].item, wh: lines[i].wh, allowEmpty: pr || po, onChanged: (v) => pickItem(i, v))),
+      if (pr)
+        ('Supplier', 130, 2.6, false, (i) => ProtoSelect(
+              placeholder: 'Select supplier',
+              value: lines[i].sup,
+              options: [
+                const SelOpt('', 'Not decided'),
+                for (final x in S.suppliers.where((x) => x.status != 'Inactive' || x.id == lines[i].sup)) SelOpt(x.id, x.name),
+              ],
+              onChanged: (v) => setState(() => lines[i].sup = v))),
+      // wraps onto a second line so a long description is never cut off
+      ('Description', 120, 2, false, (i) => TextField(controller: lines[i].descCtl, minLines: 1, maxLines: 2, style: small, decoration: const InputDecoration(hintText: 'What is needed', contentPadding: box))),
+      ('HSN / SAC', 64, .8, false, (i) => TextField(controller: lines[i].hsnCtl, style: small, decoration: const InputDecoration(hintText: 'Code', contentPadding: box))),
+      ('Qty', 52, .7, false, (i) => num(lines[i].qtyCtl)),
+      ('UOM', 72, .8, false, (i) => ProtoSelect(value: lines[i].uom, options: S.uoms.map((u) => SelOpt(u.code, u.code)).toList(), onChanged: (v) => setState(() => lines[i].uom = v))),
+      if (!noPrice) ('Rate ($_sym)', 68, .9, false, (i) => num(lines[i].rateCtl)),
+      if (!noPrice) ('Tax Code', 106, 1, false, (i) => ProtoSelect(value: lines[i].taxCode, options: S.taxNames.map((x) => SelOpt(x, x)).toList(), onChanged: (v) => setState(() => lines[i].taxCode = v))),
+      // the star only when a line holds a batch- or serial-tracked item
+      if (tr || adj)
+        ('Batch / Serial No.${tracked ? ' *' : ''}', 130, 1.6, false, (i) {
+          final track = lines[i].item.isEmpty ? 'None' : S.item(lines[i].item).track;
+          return TextField(
+            controller: lines[i].batchCtl,
+            enabled: track != 'None',
+            style: const TextStyle(fontSize: 12),
+            decoration: InputDecoration(contentPadding: box, hintText: track == 'Batch' ? 'Batch no. *' : track == 'Serial' ? 'Serial no(s). *' : 'Not tracked'),
+          );
+        }),
+      if (!noPrice) ('Line Total', 72, .3, true, (i) => calc(() => Text(_m(lines[i].lineTotal), style: tsB))),
+    ];
+    // the manager's extra line fields: a second row under each line, so the main row never slides sideways
+    final more = <(String, double, Widget Function(int))>[
+      if (_opt && !noPrice) ('Disc %', 70, (i) => num(lines[i].discCtl)),
+      if (lx && _opt) ...[
+        ('Warehouse', 110, (i) => ProtoSelect(value: lines[i].wh, options: S.warehouses.map((w) => SelOpt(w.id, w.code)).toList(), onChanged: (v) => setState(() => lines[i].wh = v))),
+        ((pr || po) ? 'Required Date' : 'Delivery Date', 130, (i) => InkWell(
+              onTap: () async {
+                final d = await _pickDate(lines[i].delivDate);
+                if (d != null) setState(() => lines[i].delivDate = d);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(R.sm), border: Border.all(color: C.border)),
+                child: Row(children: [
+                  Expanded(child: Text(lines[i].delivDate, style: const TextStyle(fontSize: 12))),
+                  const Icon(Icons.calendar_today_outlined, size: 14, color: C.faint),
+                ]),
+              ),
+            )),
+        ('Gross', 90, (i) => amount((i) => lines[i].gross, i)),
+        ('Disc Amt', 90, (i) => amount((i) => lines[i].discAmt, i)),
+      ],
+      if (_opt && !noPrice) ('Taxable', 90, (i) => amount((i) => lines[i].taxable, i)),
+      if (lx && _opt) ('Tax Amt', 90, (i) => amount((i) => lines[i].taxAmt, i)),
+    ];
+    Widget remove(int i) => IconButton(
+          tooltip: 'Remove line',
+          icon: const Icon(Icons.close, size: 16, color: C.faint),
+          onPressed: lines.length == 1 ? null : () => setState(() => lines.removeAt(i).dispose()),
+        );
+    Widget labelled(String label, Widget field) => Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Padding(padding: const EdgeInsets.only(bottom: 5), child: Text(label, style: head)),
+          field,
+        ]);
+
+    return LayoutBuilder(builder: (ctx, c) {
+      const gap = 8.0, del = 32.0;
+      final need = cols.fold<double>(0, (a, x) => a + x.$2) + gap * cols.length + del;
+      if (c.maxWidth >= need) {
+        // table: each column gets its narrowest width plus its share of the room left
+        final spare = c.maxWidth - need;
+        final shares = cols.fold<double>(0, (a, x) => a + x.$3);
+        final w = [for (final x in cols) x.$2 + spare * x.$3 / shares];
+        Widget row(List<Widget> cells, Widget? last) => Row(children: [
+              for (var k = 0; k < cols.length; k++)
+                Padding(
+                  padding: const EdgeInsets.only(right: gap),
+                  child: SizedBox(width: w[k], child: cols[k].$4 ? Align(alignment: Alignment.centerRight, child: cells[k]) : cells[k]),
+                ),
+              SizedBox(width: del, child: last),
+            ]);
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(padding: const EdgeInsets.only(bottom: 10), child: row([for (final x in cols) Text(x.$1, style: head)], null)),
+          const Divider(height: 1),
+          for (var i = 0; i < lines.length; i++) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                row([for (final x in cols) x.$5(i)], remove(i)),
+                if (more.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Wrap(spacing: 14, runSpacing: 10, children: [for (final x in more) SizedBox(width: x.$2, child: labelled(x.$1, x.$3(i)))]),
+                  ),
+              ]),
+            ),
+            const Divider(height: 1),
+          ],
+        ]);
+      }
+      // narrow screen: one card per line, every field with its heading, wrapped under each other
+      final inner = c.maxWidth - 26;
+      final per = inner >= 340 ? 2 : 1;
+      final fw = (inner - 12 * (per - 1)) / per;
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        for (var i = 0; i < lines.length; i++)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            decoration: BoxDecoration(color: C.card, borderRadius: BorderRadius.circular(R.r), border: Border.all(color: C.border)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Row(children: [Expanded(child: Text('Line ${i + 1}', style: tsB)), remove(i)]),
+              Wrap(spacing: 12, runSpacing: 12, children: [
+                for (final x in cols) SizedBox(width: x.$1 == 'Item' || x.$1 == 'Description' ? inner : fw, child: labelled(x.$1, x.$5(i))),
+                for (final x in more) SizedBox(width: fw, child: labelled(x.$1, x.$3(i))),
+              ]),
+            ]),
+          ),
+      ]);
+    });
+  }
+
   /// Picking a quotation copies its lines into the order.
   void _applyQuotation(String id) {
     quotationRef = id;
@@ -2645,119 +2796,9 @@ class _DocFormState extends State<DocForm> {
         ],
 
         const SectionTitle('Line Items'),
-        SingleChildScrollView(
+        KeyedSubtree(
           key: const ValueKey('ro-table'),
-          scrollDirection: Axis.horizontal,
-          child: IgnorePointer(ignoring: widget.readOnly, child: DataTable(
-            columnSpacing: 10,
-            horizontalMargin: 8,
-            // tall enough for the two-line item box (name + code)
-            dataRowMinHeight: 60,
-            dataRowMaxHeight: 80, // room for a two-line description
-            columns: [
-              for (final h in [
-                'Item', if (pr) 'Supplier', 'Description', 'HSN / SAC', 'Qty', 'UOM', if (!noPrice) ...['Rate ($_sym)', 'Tax Code'],
-                if (_opt && !noPrice) 'Disc %',
-                // the star only when a line holds a batch- or serial-tracked item
-                if (tr || adj) 'Batch / Serial No.${lines.any((l) => l.item.isNotEmpty && S.items.any((p) => p.id == l.item && p.track != 'None')) ? ' *' : ''}',
-                if (lx && _opt) ...['Warehouse', (pr || po) ? 'Required Date' : 'Delivery Date', 'Gross', 'Disc Amt'],
-                if (_opt && !noPrice) 'Taxable',
-                if (lx && _opt) 'Tax Amt',
-                if (!noPrice) 'Line Total', '',
-              ])
-                DataColumn(label: Text(h, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700))),
-            ],
-            rows: [
-              for (var i = 0; i < lines.length; i++)
-                DataRow(cells: [
-                  DataCell(SizedBox(
-                    width: 190,
-                    child: ItemSearchField(
-                      value: lines[i].item,
-                      wh: lines[i].wh,
-                      allowEmpty: pr || po,
-                      onChanged: (v) => setState(() {
-                        lines[i].item = v;
-                        if (v.isEmpty) return; // description-only line
-                        final itemObj = S.item(v);
-                        lines[i].descCtl.text = itemObj.name;
-                        lines[i].hsnCtl.text = itemObj.hsn;
-                        lines[i].uom = itemObj.uom;
-                        lines[i].rateCtl.text = _rateText((widget.t.startsWith('P') || const ['GRN', 'ADJ', 'TR'].contains(widget.t) ? itemObj.cost : itemObj.price) / _fx);
-                        lines[i].taxCode = S.taxNameFor(itemObj.gst);
-                        // a request line starts with the item's usual supplier (it can be changed)
-                        if (pr && lines[i].sup.isEmpty && S.suppliers.any((x) => x.id == itemObj.sup && x.status != 'Inactive')) {
-                          lines[i].sup = itemObj.sup;
-                          lines[i].rateCtl.text = _rateText(S.purchasePrice(itemObj.sup, v, lines[i].qty < 1 ? 1 : lines[i].qty.toInt()).rate / _fx);
-                        }
-                      }),
-                    ),
-                  )),
-                  if (pr)
-                    DataCell(SizedBox(
-                        width: 170,
-                        child: ProtoSelect(
-                            placeholder: 'Select supplier',
-                            value: lines[i].sup,
-                            options: [
-                              const SelOpt('', '— Not decided —'),
-                              for (final x in S.suppliers.where((x) => x.status != 'Inactive' || x.id == lines[i].sup)) SelOpt(x.id, x.name),
-                            ],
-                            onChanged: (v) => setState(() => lines[i].sup = v)))),
-                  // wraps onto a second line so a long description is never cut off
-                  DataCell(SizedBox(width: 170, child: TextField(controller: lines[i].descCtl, minLines: 1, maxLines: 2, style: const TextStyle(fontSize: 12.5), decoration: const InputDecoration(hintText: 'What is needed', isDense: true)))),
-                  DataCell(SizedBox(width: 90, child: TextField(controller: lines[i].hsnCtl, style: const TextStyle(fontSize: 12.5), decoration: const InputDecoration(hintText: 'Code')))),
-                  DataCell(SizedBox(width: 64, child: TextField(controller: lines[i].qtyCtl, keyboardType: TextInputType.number, style: const TextStyle(fontSize: 12.5), onChanged: (_) => _calc.value++))),
-                  DataCell(SizedBox(width: 87, child: ProtoSelect(value: lines[i].uom, options: S.uoms.map((u) => SelOpt(u.code, u.code)).toList(), onChanged: (v) => setState(() => lines[i].uom = v)))),
-                  if (!noPrice) DataCell(SizedBox(width: 76, child: TextField(controller: lines[i].rateCtl, keyboardType: TextInputType.number, style: const TextStyle(fontSize: 12.5), onChanged: (_) => _calc.value++))),
-                  if (!noPrice) DataCell(SizedBox(width: 112, child: ProtoSelect(value: lines[i].taxCode, options: S.taxNames.map((x) => SelOpt(x, x)).toList(), onChanged: (v) => setState(() => lines[i].taxCode = v)))),
-                  if (_opt && !noPrice) DataCell(SizedBox(width: 60, child: TextField(controller: lines[i].discCtl, keyboardType: TextInputType.number, style: const TextStyle(fontSize: 12.5), onChanged: (_) => _calc.value++))),
-                  if (tr || adj)
-                    DataCell(SizedBox(
-                      width: 150,
-                      child: Builder(builder: (_) {
-                        final track = lines[i].item.isEmpty ? 'None' : S.item(lines[i].item).track;
-                        return TextField(
-                          controller: lines[i].batchCtl,
-                          enabled: track != 'None',
-                          style: const TextStyle(fontSize: 12),
-                          decoration: InputDecoration(hintText: track == 'Batch' ? 'Batch no. *' : track == 'Serial' ? 'Serial no(s). *' : 'Not tracked'),
-                        );
-                      }),
-                    )),
-                  if (lx && _opt) ...[
-                    DataCell(SizedBox(
-                        width: 120,
-                        child: ProtoSelect(
-                            value: lines[i].wh,
-                            options: S.warehouses.map((w) => SelOpt(w.id, w.code)).toList(),
-                            onChanged: (v) => setState(() => lines[i].wh = v)))),
-                    DataCell(SizedBox(
-                      width: 110,
-                      child: InkWell(
-                        onTap: () async {
-                          final d = await _pickDate(lines[i].delivDate);
-                          if (d != null) setState(() => lines[i].delivDate = d);
-                        },
-                        child: Row(children: [
-                          Expanded(child: Text(lines[i].delivDate, style: const TextStyle(fontSize: 12))),
-                          const Icon(Icons.calendar_today_outlined, size: 14, color: C.faint),
-                        ]),
-                      ),
-                    )),
-                    DataCell(ValueListenableBuilder<int>(valueListenable: _calc, builder: (_, __, ___) => Text(_m(lines[i].gross), style: const TextStyle(fontSize: 12)))),
-                    DataCell(ValueListenableBuilder<int>(valueListenable: _calc, builder: (_, __, ___) => Text(_m(lines[i].discAmt), style: const TextStyle(fontSize: 12)))),
-                  ],
-                  if (_opt && !noPrice) DataCell(ValueListenableBuilder<int>(valueListenable: _calc, builder: (_, __, ___) => Text(_m(lines[i].taxable), style: const TextStyle(fontSize: 12)))),
-                  if (lx && _opt) DataCell(ValueListenableBuilder<int>(valueListenable: _calc, builder: (_, __, ___) => Text(_m(lines[i].taxAmt), style: const TextStyle(fontSize: 12)))),
-                  if (!noPrice) DataCell(ValueListenableBuilder<int>(valueListenable: _calc, builder: (_, __, ___) => Text(_m(lines[i].lineTotal), style: tsB))),
-                  DataCell(IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: C.faint),
-                    onPressed: lines.length == 1 ? null : () => setState(() => lines.removeAt(i).dispose()),
-                  )),
-                ]),
-            ],
-          )),
+          child: IgnorePointer(ignoring: widget.readOnly, child: _lineItems(pr: pr, po: po, tr: tr, adj: adj, lx: lx, noPrice: noPrice)),
         ),
         Align(key: const ValueKey('ro-hide-add'), alignment: Alignment.centerLeft, child: Btn.ghost('Add line', icon: 'plus', small: true, onTap: () => setState(_add))),
 
