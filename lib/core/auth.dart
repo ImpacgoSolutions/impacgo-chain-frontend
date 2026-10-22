@@ -16,8 +16,8 @@ const demoUsers = [
   AppUser('executive@impacgo.com', 'Exec@123', 'Priya Sharma', 'exec', 'Purchase & Sales Executive'),
   AppUser('store@impacgo.com', 'Store@123', 'Kiran Kumar', 'store', 'Store Keeper · Warehouse & QC'),
   AppUser('delivery@impacgo.com', 'Delivery@123', 'Suresh Naidu', 'delivery', 'Delivery Staff'),
-  // supplier login (role 'supplier', Supplier Portal) is switched off for now — add it back with the supplier screens:
-  // AppUser('supplier@andhracorrugators.com', 'Supplier@123', 'N. Prasad', 'supplier', 'Supplier · Andhra Corrugators', party: 'S003'),
+  // a supplier's login: sees only the Supplier Portal, with its own requests for quotation, orders and invoices
+  AppUser('supplier@andhracorrugators.com', 'Supplier@123', 'N. Prasad', 'supplier', 'Supplier · Andhra Corrugators', party: 'S001'),
 ];
 
 /// Our own staff (not supplier logins), e.g. for "Requested By".
@@ -46,8 +46,8 @@ const _screens = <String, Set<String>>{
     'onhand', 'ledger', 'batches', 'transfers', 'adjust', 'counting',
     'rep_grn', 'rep_stock_overview', 'rep_stock_movement', 'rep_low_stock', 'rep_batch',
   },
-  // suppliers see only their portal: purchase orders received and invoices sent
-  'supplier': {'sportal'},
+  // suppliers see only their portal: requests for quotation, purchase orders received and invoices sent
+  'supplier': {'sp_rfq', 'sp_po', 'sp_inv'},
   'delivery': {
     'workspace', 'h_team', 'vehicles', 'drivers',
     'fulfil', 'packing', 'deliveries', 'dtracking', 'sreturns',

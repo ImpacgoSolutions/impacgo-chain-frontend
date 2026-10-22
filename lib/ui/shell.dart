@@ -6,6 +6,7 @@ import '../core/format.dart';
 import '../core/models.dart' show qcDone;
 import '../screens/registry.dart';
 import '../screens/common.dart';
+import '../screens/supplier_portal.dart' show supplierToQuote, supplierNewOrders, supplierToInvoice;
 import 'overlays.dart';
 import 'tokens.dart';
 import 'widgets.dart';
@@ -43,6 +44,8 @@ final List<NavGroup> nav = [
   const NavGroup(null, [NavItem('workspace', 'SCM Workspace', 'grid')]),
   NavGroup('Buy', [
     NavItem('preqs', 'Purchase Requests', 'clipboard', () => _open('PR', ['Pending Approval'])),
+    // ask suppliers for prices: their quotations arrive from the Supplier Portal, the best one becomes the order
+    NavItem('rfqs', 'Requests for Quotation', 'msg', () => _open('RFQ', ['Quotes Received'])),
     const NavItem('porders', 'Purchase Orders', 'bag'),
     NavItem('grns', 'Goods Receipts (GRN)', 'inbox', () => _open('GRN', ['QC Pending'])),
     // inspection of received goods: waiting for QC or with the QC team
@@ -52,7 +55,6 @@ final List<NavGroup> nav = [
     const NavItem('preturns', 'Purchase Returns', 'refund'),
     NavItem('pinvoices', 'Purchase Invoices', 'file', () => S.docsOf('PI').where((d) => d.status == 'Pending Approval').length),
   ]),
-  // Supplier Portal (screen 'sportal', supplier login) is hidden for now — to be added back with the supplier screens
   NavGroup('Sell', [
     NavItem('leads', 'Leads', 'target', () => S.leads.where((l) => l.status == 'New').length),
     const NavItem('opps', 'Opportunities', 'target'),
@@ -94,6 +96,12 @@ final List<NavGroup> nav = [
     NavItem('h_customers', 'Customers', 'users'),
     NavItem('suppliers', 'Suppliers', 'store'),
     NavItem('h_team', 'Sales & Delivery Team', 'truck'),
+  ]),
+  // what a supplier sees after logging in (the manager sees it too, acting as a supplier)
+  NavGroup('Supplier Portal', [
+    NavItem('sp_rfq', 'RFQs & Quotations', 'msg', () => supplierToQuote().length),
+    NavItem('sp_po', 'Purchase Orders', 'bag', () => supplierNewOrders().length),
+    NavItem('sp_inv', 'Invoices', 'file', () => supplierToInvoice().length),
   ]),
 ];
 
@@ -188,8 +196,11 @@ class _Content extends StatelessWidget {
                   const Text('›', style: TextStyle(fontSize: 12, color: C.faint)),
                   Text(crumbs[i], style: TextStyle(fontSize: 12, color: i == crumbs.length - 1 ? C.soft : C.faint, fontWeight: i == crumbs.length - 1 ? FontWeight.w600 : FontWeight.w400)),
                 ],
-                const Text('›', style: TextStyle(fontSize: 12, color: C.faint)),
-                Text(S.currentWh.code, style: const TextStyle(fontSize: 12, color: C.faint)),
+                // the warehouse we work in (a supplier does not work in our warehouses)
+                if (!S.isSupplier) ...[
+                  const Text('›', style: TextStyle(fontSize: 12, color: C.faint)),
+                  Text(S.currentWh.code, style: const TextStyle(fontSize: 12, color: C.faint)),
+                ],
               ]),
             ),
             buildView(view),
@@ -237,8 +248,9 @@ class _SidebarState extends State<Sidebar> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(color: const Color(0x0DFFFFFF), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0x14FFFFFF))),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(S.currentCompany, style: const TextStyle(color: C.sideStrong, fontSize: 13, fontWeight: FontWeight.w600)),
-              Text('${S.warehouses.length} warehouses · SCM Edition', style: const TextStyle(color: Color(0xFF9AA3BA), fontSize: 12)),
+              // a supplier sees its own company, working with ours through the portal
+              Text(S.isSupplier ? S.sup(S.user!.party!).name : S.currentCompany, style: const TextStyle(color: C.sideStrong, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(S.isSupplier ? 'Supplier Portal · ${S.currentCompany}' : '${S.warehouses.length} warehouses · SCM Edition', style: const TextStyle(color: Color(0xFF9AA3BA), fontSize: 12)),
             ]),
           ),
           Expanded(
@@ -582,16 +594,60 @@ void openNotifications() {
 }
 
 void openProfile() {
+  final u = S.user ?? demoUsers.first;
   openModal(
-    'Srinivas Rao — SCM Manager',
-    KvGrid([
-      Kv.t('Employee ID', 'EMP-0102'),
-      Kv.t('Legal entity', S.currentCompany),
-      Kv.t('Default warehouse', S.currentWh.name),
-      Kv.t('Role', 'SCM Manager (all modules)'),
-      Kv.t('Approval limit', fmtINR(2500000)),
-      Kv.t('GSTIN', S.companyInfo['gstin']!),
+    '${u.name} — ${u.title.split(' · ').first}',
+    Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      KvGrid([
+        Kv.t('Email', u.email),
+        Kv.t('Role', u.title),
+        if (u.role == 'supplier') Kv.t('Supplier', S.sup(u.party!).name) else ...[
+          Kv.t('Legal entity', S.currentCompany),
+          Kv.t('Default warehouse', S.currentWh.name),
+        ],
+        if (u.role == 'admin') Kv.t('Approval limit', fmtINR(2500000)),
+      ]),
+      const SizedBox(height: 18),
+      // demo only: try the website as each person (until the real login is switched on)
+      const Text('VIEW THE WEBSITE AS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: C.soft, letterSpacing: .5)),
+      const SizedBox(height: 4),
+      const Text('Each role sees only its own screens and buttons.', style: TextStyle(fontSize: 12, color: C.faint)),
+      const SizedBox(height: 8),
+      for (final x in demoUsers)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(R.sm),
+            onTap: x.email == u.email
+                ? null
+                : () {
+                    closeAll();
+                    S.login(x.email, x.password);
+                    toast('Now viewing as ${x.name} · ${x.title.split(' · ').first}');
+                  },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(R.sm),
+                color: x.email == u.email ? C.blue50 : C.card,
+                border: Border.all(color: x.email == u.email ? C.blue600 : C.border),
+              ),
+              child: Row(children: [
+                Avatar(x.name),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(x.name, style: tsB6),
+                    Text(x.title, style: const TextStyle(fontSize: 11.5, color: C.faint)),
+                  ]),
+                ),
+                if (x.email == u.email) const StatusBadge('Current', tone: Tone.blue),
+              ]),
+            ),
+          ),
+        ),
     ]),
     actions: (ctx) => [Btn.secondary('Close', onTap: () => Navigator.of(ctx).pop())],
+    size: ModalSize.narrow,
   );
 }

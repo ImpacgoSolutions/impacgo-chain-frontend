@@ -94,22 +94,26 @@ Widget purchaseRequestsView() => docListView('PR', 'Purchase Requests', 'Interna
     [['AUTO', 'Reorder check raises requests for items below reorder level'], ['MANUAL', 'Approve or reject'], ['SEMI', 'Convert to RFQ or PO']],
     createLabel: 'New request', onCreate: () => openDocForm('PR'));
 
-void newRfqForm() {
+/// [pr]: the approved purchase request the quotations are asked for (picked already).
+void newRfqForm({String? pr}) {
+  // opened from a request: its warehouse, item and quantity are filled in
+  final src = pr == null ? null : S.doc(pr);
+  final line = src?.lines.firstOrNull;
   mform('New request for quotation', [
 
     const F.header('RFQ'),
     F('rfq_no', 'RFQ No.', type: 'readonly', def: nextNo('RFQ')),
     F('rfq_date', 'RFQ Date', type: 'date', def: todayStr(), req: true),
-    F('pr_ref', 'Purchase Request Ref.', type: 'select', req: true, options: [
+    F('pr_ref', 'Purchase Request Ref.', type: 'select', req: true, def: pr ?? '', options: [
       ...S.docsOf('PR').where((d) => d.status == 'Approved').map((d) => Opt(d.id, '${d.id} · ${S.item(d.lines.first.item).name}')),
       const Opt('', 'Direct — without a request'),
     ]),
     F('close', 'Quote Due Date', type: 'date', def: addDays(todayStr(), 3), req: true),
-    F('wh', 'Delivery Location', type: 'select', def: S.currentWh.id, options: S.warehouses.map((w) => Opt(w.id, '${w.code} — ${w.city}')).toList()),
+    F('wh', 'Delivery Location', type: 'select', def: src?.wh ?? S.currentWh.id, options: S.warehouses.map((w) => Opt(w.id, '${w.code} — ${w.city}')).toList()),
     const F.header('Line Item'),
-    F('item', 'Item', type: 'select', req: true, options: S.items.map((p) => Opt(p.id, '${p.name} (${p.id})')).toList()),
-    const F('qty', 'Qty', type: 'number', def: '50', req: true),
-    F('uom', 'UOM', type: 'select', req: true, options: S.uoms.map((u) => Opt(u.code, u.code)).toList()),
+    F('item', 'Item', type: 'select', req: true, def: line?.item ?? '', options: S.items.map((p) => Opt(p.id, '${p.name} (${p.id})')).toList()),
+    F('qty', 'Qty', type: 'number', def: line == null ? '50' : '${line.qty}', req: true),
+    F('uom', 'UOM', type: 'select', req: true, def: line == null ? '' : S.item(line.item).uom, options: S.uoms.map((u) => Opt(u.code, u.code)).toList()),
     const F.header('Suppliers'),
     F('sups', 'Suppliers', type: 'checks', req: true, options: [
       for (var i = 0; i < S.suppliers.length; i++) Opt(S.suppliers[i].id, '${S.suppliers[i].name} · lead ${S.suppliers[i].lead} d', checked: i < 3),

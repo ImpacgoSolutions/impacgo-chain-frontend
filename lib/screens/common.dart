@@ -21,6 +21,7 @@ import 'attachments.dart';
 import 'addresses.dart';
 import 'buy_report.dart';
 import 'grn_form.dart';
+import 'sales_proc.dart' show newRfqForm;
 import '../core/export_builders.dart' show buildInvoicePdf, buildReceiptPdf, buildOrderPdf, buildPurchaseRequestPdf, buildPurchaseOrderPdf, buildGrnPdf, buildQcPdf, buildPurchaseInvoicePdf, buildPurchaseReturnPdf, ExportPart;
 import '../core/export_helper.dart' show exportDocPdf;
 import '../ui/export_options.dart';
@@ -653,6 +654,7 @@ List<Widget> actionsFor(Doc d, {bool nextOnly = false}) {
         pri('Approve request', 'check', () => run(() => S.prApprove(id)));
       }
       if (s == 'Approved') {
+        sec('Ask suppliers for quotes', 'msg', () => newRfqForm(pr: id));
         pri('Convert to purchase order', 'swap', () => openPoFromPr(d));
         sec('Download PDF', 'download', () => downloadOrder(d));
       }

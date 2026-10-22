@@ -108,7 +108,12 @@ Widget _screenBody(String id) {
     case 'qc':
       return qcView();
     case 'sportal':
-      return const SupplierPortalView();
+    case 'sp_po':
+      return const SupplierPortalView(SupplierPage.orders);
+    case 'sp_rfq':
+      return const SupplierPortalView(SupplierPage.rfqs);
+    case 'sp_inv':
+      return const SupplierPortalView(SupplierPage.invoices);
     case 'pinvoices':
       return supplierInvoicesView();
     case 'preturns':

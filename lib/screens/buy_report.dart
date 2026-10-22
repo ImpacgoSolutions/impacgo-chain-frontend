@@ -9,6 +9,7 @@ import '../ui/tokens.dart';
 import '../ui/widgets.dart';
 import 'common.dart';
 import 'doc_report.dart';
+import 'sales_proc.dart' show newRfqForm;
 
 /// Purchase request, purchase order, goods receipt, purchase invoice and purchase return
 /// pages: a download icon at the top (once the document can be shared), the document as a
@@ -271,8 +272,15 @@ class _NextSteps extends StatelessWidget {
           ]);
         }
         if (s == 'Approved') {
+          // not sure of the price: ask suppliers first (their quotations come in through the Supplier Portal)
+          steps.add(Btn.secondary('Ask suppliers for quotes', icon: 'msg', onTap: () => newRfqForm(pr: id)));
           steps.add(Btn('Convert to purchase order', icon: 'swap', onTap: () => openPoFromPr(d)));
           steps.add(Btn.secondary('Download purchase request', icon: 'download', onTap: () => downloadBuyDoc(d)));
+        }
+        if (s == 'RFQ Sent') {
+          final rfq = S.docsOf('RFQ').where((r) => r.ref == id).firstOrNull;
+          info = 'Quotations asked from suppliers · the order is made from the best one';
+          if (rfq != null) steps.add(Btn('View request for quotation · ${rfq.id}', icon: 'msg', onTap: () => openDoc(rfq.id)));
         }
         if (s == 'Rejected') {
           info = 'Request rejected by SCM Manager · Reason: ${d.reason ?? 'No reason specified'}';

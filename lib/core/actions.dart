@@ -771,6 +771,65 @@ extension ScmActions on AppStore {
     return Res('Purchase invoice ${pi.id} received from the supplier · ${pi.status}', pi.id);
   }
 
+  // ============================ Supplier Portal ============================
+  /// Who did it, as shown in the history: the supplier's person when a supplier is logged in.
+  String _supplierActor(String supId) => user?.role == 'supplier' ? '${user!.name} (${sup(supId).name})' : '${sup(supId).name} (Supplier)';
+
+  /// The supplier sends (or changes) its quotation for a request for quotation.
+  Res supplierQuote(String rfqId, String supId, double rate, int leadDays, String validUntil, String note) {
+    final r = doc(rfqId)!;
+    if (r.status == 'Awarded' || r.status == 'Cancelled') return Res('${r.id} is ${r.status}: quotations are closed');
+    final again = r.quotes.any((q) => q.sup == supId);
+    r.quotes = [...r.quotes.where((q) => q.sup != supId), Quote(supId, rate, leadDays, validUntil)];
+    r.extra = {...r.extra}..remove('decline:$supId');
+    if (note.trim().isNotEmpty) r.extra['qnote:$supId'] = note.trim();
+    if (r.status == 'Awaiting Quotes') setStatus(r, 'Quotes Received', _supplierActor(supId), '${sup(supId).name} quoted ${fmtINR(rate)} per unit');
+    logDoc(r, '${again ? 'Quotation updated' : 'Quotation received'} · ${fmtINR(rate)} per unit · delivery in $leadDays days · valid until $validUntil', _supplierActor(supId));
+    return Res('Quotation ${again ? 'updated' : 'sent'} for ${r.id} · ${fmtINR(rate)} per unit', rfqId);
+  }
+
+  /// The supplier will not quote for this request.
+  Res supplierDeclineRfq(String rfqId, String supId, String reason) {
+    final r = doc(rfqId)!;
+    r.quotes = r.quotes.where((q) => q.sup != supId).toList();
+    r.extra = {...r.extra, 'decline:$supId': reason};
+    logDoc(r, '${sup(supId).name} declined to quote · $reason', _supplierActor(supId), 'x');
+    return Res('You declined ${r.id}', rfqId);
+  }
+
+  /// The supplier accepts the purchase order and confirms when it will deliver.
+  Res supplierAcceptPo(String poId, String deliveryDate, String note) {
+    final po = doc(poId)!;
+    if (po.status != 'Sent to Supplier') return Res('${po.id} is ${po.status}: it can no longer be accepted');
+    final by = _supplierActor(po.party!);
+    po.extra = {...po.extra, 'ack': todayStr(), 'ack_by': by, 'ack_date': deliveryDate, if (note.trim().isNotEmpty) 'ack_note': note.trim()};
+    logDoc(po, 'Accepted by the supplier · delivery confirmed for $deliveryDate${note.trim().isEmpty ? '' : ' · ${note.trim()}'}', by);
+    return Res('${po.id} accepted · delivery on $deliveryDate', poId);
+  }
+
+  /// The supplier rejects the purchase order. The order is cancelled with the supplier's reason, and what it was made
+  /// from opens up again: the purchase request goes back to Approved, the RFQ back to Quotes Received (without this
+  /// supplier's quote), so the buyer can order from another supplier.
+  Res supplierRejectPo(String poId, String reason) {
+    final po = doc(poId)!;
+    if (po.status != 'Sent to Supplier' || po.extra['ack'] != null) return Res('${po.id} is ${po.extra['ack'] != null ? 'already accepted' : po.status}: it can no longer be rejected');
+    final by = _supplierActor(po.party!);
+    po.note = 'Rejected by the supplier: $reason';
+    po.extra = {...po.extra, 'sup_reject': reason};
+    setStatus(po, 'Cancelled', by, 'rejected by the supplier · $reason');
+    final src = po.ref == null ? null : doc(po.ref!);
+    if (src != null && src.type == 'PR' && src.status == 'Ordered') {
+      setStatus(src, 'Approved', Users.sys, '${po.id} rejected by ${sup(po.party!).name} · order again');
+    } else if (src != null && src.type == 'RFQ' && src.status == 'Awarded') {
+      src.quotes = src.quotes.where((q) => q.sup != po.party).toList();
+      setStatus(src, src.quotes.isEmpty ? 'Awaiting Quotes' : 'Quotes Received', Users.sys, '${po.id} rejected by ${sup(po.party!).name} · award again');
+      final pr = src.ref == null ? null : doc(src.ref!);
+      if (pr != null && pr.status == 'Ordered') setStatus(pr, 'RFQ Sent', Users.sys, '${po.id} rejected by the supplier');
+    }
+    sendEmail('Purchase team', 'Purchase order ${po.id} rejected by ${sup(po.party!).name} · $reason', po.id);
+    return Res('${po.id} rejected · ${currentCompany} has been told the reason', poId);
+  }
+
   /// The supplier already has an invoice with this number on file (the same invoice must not be entered twice).
   bool supplierInvoiceExists(String? supplier, String no) => docsOf('PI').any((p) => p.party == supplier && (p.supInv ?? '').trim().toLowerCase() == no.trim().toLowerCase() && p.status != 'Rejected');
 

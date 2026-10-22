@@ -74,7 +74,7 @@ class AppStore extends ChangeNotifier {
     final u = demoUsers.where((x) => x.email.toLowerCase() == email.toLowerCase() && x.password == pass).firstOrNull;
     if (u == null) return false;
     user = u;
-    if (u.role == 'supplier') view = 'sportal';
+    if (u.role == 'supplier') view = 'sp_po';
     notifyListeners();
     return true;
   }
@@ -325,6 +325,8 @@ class AppStore extends ChangeNotifier {
     saveDocForm('ADJ', null, w, null, 'Damage', [(item: it, qty: -2)], rates: [item(it).cost]);
     final cc = newCount(w, 'B · Bulk storage', 'Kiran Kumar', picks: [it])..source = 'Spot check';
     ccCount(cc.id, [for (final l in cc.lines) countSys(w, l)]);
+    // ---- Supplier Portal: a request for quotation waiting for the supplier's price
+    newRfq(it, 1000, w, addDays(todayStr(), 3), [suppliers.first.id]);
   }
 
   /// Removes the demo items, customers and suppliers (and what hangs off them), for a start from nothing.
