@@ -264,11 +264,8 @@ Widget batchesView() =>
     Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       PageHeader('Batches & Serial Numbers',
           sub:
-              'Batch-tracked and serial-tracked items · batches with the earliest expiry are picked first',
-          actions: [
-            Btn.secondary('New batch', icon: 'plus', onTap: newBatchForm),
-            Btn('New serial number', icon: 'plus', onTap: newSerialForm),
-          ]),
+              'Batch-tracked and serial-tracked items · batches with the earliest expiry are picked first'),
+      // New batch / New serial number are in each tab's table card, next to Export CSV
       Tabs([
         TabDef(
             'Batches',

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'select.dart';
 import '../app_state.dart';
-import '../core/store.dart';
 import '../core/auth.dart';
 import '../core/format.dart';
 import '../core/models.dart' show qcDone;

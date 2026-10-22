@@ -656,7 +656,6 @@ Widget warehousesView() => Column(crossAxisAlignment: CrossAxisAlignment.stretch
         Btn.secondary('New warehouse', icon: 'plus', onTap: newWarehouseForm),
         Btn.secondary('Edit warehouse', icon: 'edit', onTap: editWarehousePick),
         Btn.secondary('Delete warehouse', icon: 'trash', onTap: deleteWarehousePick),
-        Btn('New bin', icon: 'plus', onTap: newBinForm),
       ]),
       const SectionTitle('Sites', first: true),
       RGrid(max: 2, minTile: 300, children: [
@@ -711,9 +710,7 @@ Widget warehousesView() => Column(crossAxisAlignment: CrossAxisAlignment.stretch
     ]);
 
 Widget binsView() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      PageHeader('Bins / Locations', sub: 'Warehouse storage locations, zones and capacities', actions: [
-        Btn('New bin', icon: 'plus', onTap: newBinForm),
-      ]),
+      PageHeader('Bins / Locations', sub: 'Warehouse storage locations, zones and capacities'),
       DataTableCard(
         id: 'bins-view',
         rows: S.bins,

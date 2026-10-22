@@ -256,9 +256,7 @@ Widget oppsView() {
   final won = S.opps.where((o) => o.stage == 'Won').length;
   final closed = S.opps.where((o) => ['Won', 'Lost'].contains(o.stage)).length;
   return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    PageHeader('Opportunities', sub: 'Open deals · a proposal creates the quotation in Sales', actions: [
-      Btn('New opportunity', icon: 'plus', onTap: newOppForm),
-    ]),
+    PageHeader('Opportunities', sub: 'Open deals · a proposal creates the quotation in Sales'),
     StatRow([
       Stat('Open pipeline', fmtINR(open.fold<double>(0, (a, o) => a + o.value)), '${open.length} deals', 'trend', Tone.blue),
       Stat('Weighted pipeline', fmtINR(open.fold<double>(0, (a, o) => a + o.value * o.prob / 100)), 'By probability', 'percent', Tone.purple),
@@ -270,6 +268,9 @@ Widget oppsView() {
       rows: S.opps,
       bulk: true,
       exportName: 'opportunities',
+      // the create button sits in the table card, next to Export CSV
+      createLabel: 'New opportunity',
+      onCreate: newOppForm,
       onRow: (r) => openOpp(r as Opportunity),
       search: (r) => '${(r as Opportunity).id} ${r.title} ${r.owner}',
       filters: [
