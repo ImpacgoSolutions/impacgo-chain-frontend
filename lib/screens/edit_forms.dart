@@ -117,7 +117,7 @@ void editItem(Item p) {
     F('name', 'Item Name', req: true, def: p.name),
     F('type', 'Item Type', type: 'select', req: true, def: p.type, options: opts(['Goods', 'Service'])),
     F('cat', 'Category', type: 'select', req: true, def: p.cat, options: opts(_with(S.categories, p.cat))),
-    F('uom', 'UOM', type: 'select', req: true, def: p.uom, options: S.uoms.map((u) => Opt(u.code, '${u.code} · ${u.name}')).toList()),
+    F('uom', 'UOM', type: 'select', req: true, def: p.uom, custom: true, customLabel: '+ Add a new unit', options: S.uoms.map((u) => Opt(u.code, u.code)).toList()),
     F('hsn', 'HSN Code', req: true, def: p.hsn),
     F('gst', 'Tax Code', type: 'select', req: true, def: S.taxNameFor(p.gst), options: opts(S.taxNames)),
     hasStock
@@ -133,6 +133,7 @@ void editItem(Item p) {
     F('lead', 'Lead Time (days)', type: 'number', def: '${p.lead}'),
     F('status', 'Status', type: 'select', def: p.status, options: opts(['Active', 'Inactive', 'Discontinued'])),
   ], (v, _) {
+    v['uom'] = S.unitFor(v['uom'] as String);
     final cost = ((v['cost'] ?? 0) as num).toDouble(), price = ((v['price'] ?? 0) as num).toDouble();
     if (price < cost) {
       toast('Selling Price is below Purchase Price — check the values');

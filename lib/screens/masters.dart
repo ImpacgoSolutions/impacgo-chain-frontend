@@ -263,7 +263,7 @@ void newItemForm() {
     const F('name', 'Item Name', req: true, hint: 'e.g. Industrial Safety Helmet'),
     F('type', 'Item Type', type: 'select', req: true, options: opts(['Goods', 'Service'])),
     F('cat', 'Category', type: 'select', req: true, options: opts(S.categories)),
-    F('uom', 'UOM', type: 'select', req: true, options: S.uoms.map((u) => Opt(u.code, '${u.code} · ${u.name}')).toList()),
+    F('uom', 'UOM', type: 'select', req: true, custom: true, customLabel: '+ Add a new unit', options: S.uoms.map((u) => Opt(u.code, u.code)).toList()),
     const F('hsn', 'HSN Code', def: '6506', req: true),
     F('gst', 'Tax Code', type: 'select', def: 'GST 18%', req: true, options: opts(S.taxNames)),
     F('track', 'Tracking', type: 'select', req: true, options: opts(['None', 'Batch', 'Serial'])),
@@ -288,6 +288,7 @@ void newItemForm() {
       return false;
     }
     final id = S.nextItemId();
+    v['uom'] = S.unitFor(v['uom'] as String);
     final gstNum = S.taxRateOf(v['gst'].toString()).round();
     S.items.add(Item(id, (v['name'] as String).trim(), v['cat'] as String, (v['hsn'] as String).isEmpty ? '6403' : v['hsn'] as String, gstNum, v['uom'] as String, costVal, priceVal,
         ((v['reorder'] ?? 50) as num).toInt(), ((v['moq'] ?? 10) as num).toInt(), 5, ((v['lead'] ?? 5) as num).toInt(), v['sup'] as String, v['track'] as String, [0, 0, 0])

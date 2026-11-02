@@ -387,9 +387,9 @@ void _seedExtras(AppStore s) {
     SupplierGroup('SG-CON', 'Consumables', 15, ['S007', 'S008'], 'Cleaning, chemicals, water'),
   ]);
   s.uoms.addAll([
-    Uom('Nos', 'Numbers', 'Count', 'Nos', 1), Uom('Box', 'Box of 100', 'Pack', 'Nos', 100), Uom('Roll', 'Roll', 'Count', 'Roll', 1),
-    Uom('Coil', 'Coil (90 m)', 'Length', 'm', 90), Uom('Can', 'Can (5 L)', 'Volume', 'L', 5), Uom('Drum', 'Drum (20 L)', 'Volume', 'L', 20),
-    Uom('Case', 'Case of 12', 'Pack', 'Nos', 12), Uom('Set', 'Set', 'Count', 'Set', 1), Uom('Bag', 'Bag (5 kg)', 'Weight', 'kg', 5),
+    Uom('Nos', 'Numbers', 'Count', 'Nos', 1), Uom('Box', 'Box', 'Pack', 'Nos', 100), Uom('Roll', 'Roll', 'Count', 'Roll', 1),
+    Uom('Coil', 'Coil', 'Length', 'm', 90), Uom('Can', 'Can', 'Volume', 'L', 5), Uom('Drum', 'Drum', 'Volume', 'L', 20),
+    Uom('Case', 'Case', 'Pack', 'Nos', 12), Uom('Set', 'Set', 'Count', 'Set', 1), Uom('Bag', 'Bag', 'Weight', 'kg', 5),
   ]);
   s.trackGroups.addAll([
     TrackGroup('TDG-NONE', 'None', 'No', 'No', 'No', 'Quantity only'),

@@ -301,9 +301,12 @@ class F {
   final bool show;
   /// Select only: adds "Other (type your own)", which shows a text box and saves what is typed.
   final bool custom;
+  /// The wording of that option instead of "Other (type your own)".
+  final String? customLabel;
 
   const F(this.k, this.l, {
     this.custom = false,
+    this.customLabel,
     this.type = 'text',
     this.options = const [],
     this.def = '',
@@ -321,6 +324,7 @@ class F {
 
   const F.header(String title)
       : custom = false,
+        customLabel = null,
         k = '',
         l = title,
         type = 'header',
@@ -339,6 +343,7 @@ class F {
 
   const F.calc(String key, String label, {String def = '0', bool full = false})
       : custom = false,
+        customLabel = null,
         k = key,
         l = label,
         type = 'readonly',
@@ -692,7 +697,7 @@ class _MFormState extends State<_MForm> {
           placeholder: 'Select ${f.l.toLowerCase()}',
           value: sel[f.k] ?? '',
           error: isBad && sel[f.k] != _other,
-          options: [...f.options.map((o) => SelOpt(o.value, o.label)), if (f.custom) const SelOpt(_other, 'Other (type your own)')],
+          options: [...f.options.map((o) => SelOpt(o.value, o.label)), if (f.custom) SelOpt(_other, f.customLabel ?? 'Other (type your own)')],
           onChanged: (x) => setState(() {
             sel[f.k] = x;
             bad.remove(f.k);

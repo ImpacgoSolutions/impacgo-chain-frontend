@@ -1189,6 +1189,15 @@ extension ScmActions on AppStore {
   /// Saves changes to a document that is still open (before approval / posting).
   /// A purchase line typed as a description only (no item chosen) is kept as a non-stock item,
   /// so the purchase order, goods receipt and invoice can carry it like any other line.
+  /// The unit for [name]: an existing one (any capitals), or a new unit added to Units of Measure.
+  String unitFor(String name) {
+    final n = name.trim();
+    final have = uoms.where((u) => u.code.toLowerCase() == n.toLowerCase()).firstOrNull;
+    if (have != null) return have.code;
+    uoms.add(Uom(n, n, 'Count', n, 1));
+    return n;
+  }
+
   String nonStockItem(String desc, String hsn, String uom, int gst, double rate, String? supplier) {
     final same = items.where((p) => p.cat == 'Non-stock' && p.name.toLowerCase() == desc.toLowerCase()).firstOrNull;
     if (same != null) return same.id;
